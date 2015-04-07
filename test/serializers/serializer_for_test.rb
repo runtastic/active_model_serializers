@@ -50,6 +50,12 @@ module ActiveModel
           serializer = ActiveModel::Serializer.serializer_for(@my_profile)
           assert_equal ProfileSerializer, serializer
         end
+
+        def test_serializer_in_module
+          post = Post.new
+          serializer = ActiveModel::Serializer.serializer_for(post, { namespace: Test::Serializer })
+          assert_equal Test::Serializer::Post, serializer
+        end
       end
     end
   end

@@ -73,6 +73,13 @@ module ActiveModel
         end
       end
 
+      def test_association_with_namespace_options_uses_namespace_serializer
+        @post_serializer = Test::Serializer::Post.new(@post)
+        @post_serializer.each_association do |name, serializer, options|
+          assert_kind_of Test::Serializer::Comment, serializer.to_a.first
+        end
+      end
+
       def test_belongs_to
         assert_equal(
           { post: { type: :belongs_to, association_options: {} },
