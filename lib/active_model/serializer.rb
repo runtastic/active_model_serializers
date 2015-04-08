@@ -212,7 +212,13 @@ module ActiveModel
     end
 
     def serializer_from_options(options)
-      options.fetch(:association_options, {}).select { |key, value| [:serializer,:namespace].include?(key) }
+      opts = {}
+      association_options = options.fetch(:association_options, {})
+      [:serializer,:namespace].each do |key|
+        value = association_options.fetch(key, nil)
+        opts[key] = value if value
+      end
+      opts
     end
 
     def self.serializers_cache
