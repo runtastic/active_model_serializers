@@ -57,6 +57,7 @@ module ActiveModel
               id   = included[:id]
               not_in_data?(ids_per_type, type, id)
             end
+            hash.delete(:included) if hash[:included].empty?
           end
           hash
         end
