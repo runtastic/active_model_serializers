@@ -73,6 +73,13 @@ module ActiveModel
         end
       end
 
+      def test_association_with_namespace_options_uses_namespace_serializer
+        @post_serializer = Test::Serializer::Post.new(@post)
+        @post_serializer.each_association do |name, serializer, options|
+          assert_kind_of Test::Serializer::Comment, serializer.to_a.first
+        end
+      end
+
       def test_belongs_to
         assert_equal(
           { post: { type: :belongs_to, association_options: {} },
@@ -100,6 +107,27 @@ module ActiveModel
         end
 
         assert blog_is_present
+      end
+
+      def test_associations_inheritance
+        inherited_klass = Class.new(PostSerializer)
+
+        assert_equal(PostSerializer._associations, inherited_klass._associations)
+      end
+
+      def test_associations_inheritance_with_new_association
+        inherited_klass = Class.new(PostSerializer) do
+          has_many :top_comments, serializer: CommentSerializer
+        end
+        expected_associations = PostSerializer._associations.merge(
+          top_comments: {
+            type: :has_many,
+            association_options: {
+              serializer: CommentSerializer
+            }
+          }
+        )
+        assert_equal(inherited_klass._associations, expected_associations)
       end
     end
   end

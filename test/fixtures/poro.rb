@@ -42,7 +42,7 @@ class Profile < Model
 end
 
 class ProfileSerializer < ActiveModel::Serializer
-  attributes :name, :description
+  attributes :name, :description, :nothing
 
   urls :posts, :comments
 
@@ -170,4 +170,20 @@ end
 
 Spam::UnrelatedLinkSerializer = Class.new(ActiveModel::Serializer) do
   attributes :id
+end
+
+module Test
+  module Serializer
+    Post = Class.new(ActiveModel::Serializer) do
+      attributes :id, :title
+
+      has_many :comments, namespace: Test::Serializer
+    end
+
+    Comment = Class.new(ActiveModel::Serializer) do
+      attributes :id
+
+      belongs_to :post, namespace: Test::Serializer
+    end
+  end
 end

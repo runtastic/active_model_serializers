@@ -227,6 +227,29 @@ module ActiveModel
             assert_equal expected, adapter.serializable_hash[:included]
           end
 
+          def test_nil_link_with_specified_serializer
+            @first_post.author = nil
+            serializer = PostPreviewSerializer.new(@first_post)
+            adapter = ActiveModel::Serializer::Adapter::JsonApi.new(
+              serializer,
+              include: ['author']
+            )
+
+            expected = {
+              data: {
+                id: "10",
+                title: "Hello!!",
+                body: "Hello, world!!",
+                type: "posts",
+                links: {
+                  comments: { linkage: [ { type: "comments", id: '1' }, { type: "comments", id: '2' } ] },
+                  author: { linkage: nil }
+                }
+              }
+            }
+            assert_equal expected, adapter.serializable_hash
+          end
+
           def test_duplicated_data_without_prevent_duplicates_option
             serializer = ArraySerializer.new([@first_post, @first_comment])
             adapter = ActiveModel::Serializer::Adapter::JsonApi.new(

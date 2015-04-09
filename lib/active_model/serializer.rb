@@ -18,8 +18,8 @@ module ActiveModel
     end
 
     def self.inherited(base)
-      base._attributes = []
-      base._associations = {}
+      base._attributes = self._attributes.try(:dup)  || []
+      base._associations = self._associations.try(:dup) || {}
       base._urls = []
     end
 
@@ -105,9 +105,14 @@ module ActiveModel
       if resource.respond_to?(:to_ary)
         config.array_serializer
       else
-        options
-          .fetch(:association_options, {})
-          .fetch(:serializer, get_serializer_for(resource.class))
+        resource_class = resource.class
+        association_options = options.fetch(:association_options, {})
+        namespace = options[:namespace] || association_options[:namespace]
+        if namespace
+          "#{namespace}::#{resource_class.name.demodulize}".safe_constantize
+        else
+          association_options.fetch(:serializer, get_serializer_for(resource_class))
+        end
       end
     end
 
@@ -183,7 +188,7 @@ module ActiveModel
       attributes += options[:required_fields] if options[:required_fields]
 
       attributes.each_with_object({}) do |name, hash|
-        hash[name] = send(name)
+        hash[name] = send(name) if !send(name).nil? || options[:include_nil]
       end
     end
 
@@ -208,8 +213,11 @@ module ActiveModel
 
     def serializer_from_options(options)
       opts = {}
-      serializer = options.fetch(:association_options, {}).fetch(:serializer, nil)
-      opts[:serializer] = serializer if serializer
+      association_options = options.fetch(:association_options, {})
+      [:serializer,:namespace].each do |key|
+        value = association_options.fetch(key, nil)
+        opts[key] = value if value
+      end
       opts
     end
 
