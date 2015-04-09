@@ -15,9 +15,16 @@ module ActiveModel
         end
 
         def serializable_hash(options = {})
+          hash = serializable_hash_with_duplicates
+          remove_duplicates(hash)
+        end
+
+        protected
+
+        def serializable_hash_with_duplicates
           if serializer.respond_to?(:each)
             serializer.each do |s|
-              result = self.class.new(s, @options.merge(fieldset: @fieldset)).serializable_hash
+              result = self.class.new(s, @options.merge(fieldset: @fieldset)).serializable_hash_with_duplicates
               @hash[:data] << result[:data]
 
               if result[:included]
@@ -36,6 +43,27 @@ module ActiveModel
         end
 
         private
+
+        def remove_duplicates(hash)
+          if @options[:prevent_duplicates] && hash[:included] && hash[:data].is_a?(Array)
+            ids_per_type = {}
+            hash[:data].each do |resource|
+              type = resource[:type]
+              ids_per_type[type] ||= Set.new
+              ids_per_type[type] << resource[:id]
+            end
+            hash[:included].select! do |included|
+              type = included[:type]
+              id   = included[:id]
+              not_in_data?(ids_per_type, type, id)
+            end
+          end
+          hash
+        end
+
+        def not_in_data?(ids_per_type, type, id)
+          !ids_per_type[type].try(:include?, id)
+        end
 
         def add_links(resource, name, serializers)
           resource[:links] ||= {}
