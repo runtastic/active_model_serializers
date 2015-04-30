@@ -192,6 +192,40 @@ resources in the `"included"` member when the resource names are included in the
   render @posts, include: 'authors,comments'
 ```
 
+Link urls can be defined by adding methods with specific name to the serializer. For example,
+```ruby
+class PostSerializer < ActiveModel::Serializer
+  has_many :comments
+
+  def self_link
+    "http://foo.com/posts/#{object.id}"
+  end
+  def comments_self_link # association name followed by "_self_link"
+    "http://bar.com/posts/#{object.id}/comments",
+  end
+  def comments_related_link # association name followed by "_related_link"
+    "http://api.foo.com/posts/#{object.id}/rel/comments",
+  end
+end
+
+```
+may result as
+```json
+{
+  "id": "1",
+  "type": "posts",
+  "self": "http://foo.com/posts/1",
+  "links": {
+    "comments": {
+      "self": "http://bar.com/posts/1/comments",
+      "related": "http://api.foo.com/posts/1/rel/comments",
+      "linkage": [{ "id": 5, "type": "comments" }]
+    }
+  }
+}
+```
+
+
 ## Installation
 
 Add this line to your application's Gemfile:

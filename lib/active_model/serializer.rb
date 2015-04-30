@@ -88,7 +88,6 @@ module ActiveModel
             object.send attr
           end
         end
-
         self._associations[attr] = {type: type, association_options: options}
       end
     end
