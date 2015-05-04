@@ -249,6 +249,88 @@ module ActiveModel
             }
             assert_equal expected, adapter.serializable_hash
           end
+
+          def test_duplicated_data_without_prevent_duplicates_option
+            serializer = ArraySerializer.new([@first_post, @first_comment])
+            adapter = ActiveModel::Serializer::Adapter::JsonApi.new(
+              serializer,
+              include: ['author', 'comments']
+            )
+
+            expected = [
+              {
+                id:"1",
+                body:"ZOMG A COMMENT",
+                type:"comments",
+                links:{
+                  post: { linkage: { type:"posts", id:"10" } },
+                  author: { linkage: nil} }
+              },
+              {
+                id: "2",
+                body: "ZOMG ANOTHER COMMENT",
+                type: "comments",
+                links: {
+                  post: { linkage: { type: "posts", id: "10" } },
+                  author: { linkage: nil }
+                }
+              }, {
+                id: "1",
+                name: "Steve K.",
+                type: "authors",
+                links: {
+                  posts: { linkage: [ { type: "posts", id: "10" }, { type: "posts", id: "30" } ] },
+                  roles: { linkage: [] },
+                  bio: { linkage: { type: "bios", id: "1" } }
+                }
+              }
+            ]
+            assert_equal expected, adapter.serializable_hash[:included]
+          end
+
+          def test_duplicated_data_with_prevent_duplicates_option
+            serializer = ArraySerializer.new([@first_post, @first_comment])
+            adapter = ActiveModel::Serializer::Adapter::JsonApi.new(
+              serializer,
+              include: ['author', 'comments'],
+              prevent_duplicates: true
+            )
+
+            expected = [
+              {
+                id: "2",
+                body: "ZOMG ANOTHER COMMENT",
+                type: "comments",
+                links: {
+                  post: { linkage: { type: "posts", id: "10" } },
+                  author: { linkage: nil }
+                }
+              }, {
+                id: "1",
+                name: "Steve K.",
+                type: "authors",
+                links: {
+                  posts: { linkage: [ { type: "posts", id: "10" }, { type: "posts", id: "30" } ] },
+                  roles: { linkage: [] },
+                  bio: { linkage: { type: "bios", id: "1" } }
+                }
+              }
+            ]
+            assert_equal expected, adapter.serializable_hash[:included]
+          end
+
+
+          def test_no_included_after_duplication_removal
+            @first_post.comments = [@first_comment]
+            serializer = ArraySerializer.new([@first_post, @first_comment])
+            adapter = ActiveModel::Serializer::Adapter::JsonApi.new(
+              serializer,
+              include: ['comments'],
+              prevent_duplicates: true
+            )
+
+            assert_equal false, adapter.serializable_hash.has_key?(:included)
+          end
         end
       end
     end
