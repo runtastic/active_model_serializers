@@ -2,8 +2,13 @@ module ActiveModel
   class Serializer
     class Adapter
       class JsonApi < Adapter
+        autoload :Configuration
+        include Configuration
+
         def initialize(serializer, options = {})
           super
+          @options = config.default_options.merge(@options)
+
           serializer.root = true
           @hash = { data: [] }
 
@@ -67,17 +72,15 @@ module ActiveModel
         end
 
         def add_links(resource, name, serializers)
-          resource[:links] ||= {}
-          resource[:links][name] ||= { linkage: [] }
-          resource[:links][name][:linkage] += serializers.map { |serializer| { type: serializer.type, id: serializer.id.to_s } }
+          resource[:links][name] = { linkage: [] } if @options[:include_blank_linkage]
+          linkage = serializers.map { |serializer| { type: serializer.type, id: serializer.id.to_s } }
+          resource[:links][name] = { linkage: linkage } unless linkage.empty?
         end
 
         def add_link(resource, name, serializer)
-          resource[:links] ||= {}
-          resource[:links][name] = { linkage: nil }
-
+          resource[:links][name] = { linkage: nil } if @options[:include_blank_linkage]
           if serializer && serializer.object
-            resource[:links][name][:linkage] = { type: serializer.type, id: serializer.id.to_s }
+            resource[:links][name] = { linkage: { type: serializer.type, id: serializer.id.to_s } }
           end
         end
 

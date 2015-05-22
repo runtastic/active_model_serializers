@@ -30,13 +30,29 @@ module ActiveModel
 
             @serializer = PostSerializer.new(@post)
             @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer)
+            ActionController::Base.cache_store.clear
           end
 
-          def test_includes_comment_ids
+          def test_includes_comments_linkage
             expected = { linkage: [ { type: "comments", id: "1" }, { type: "comments", id: "2" } ] }
 
             assert_equal(expected, @adapter.serializable_hash[:data][:links][:comments])
           end
+
+          def test_includes_empty_comments_linkage
+            @post.comments = []
+            expected = { linkage: [] }
+
+            assert_equal(expected, @adapter.serializable_hash[:data][:links][:comments])
+          end
+
+          def test_allow_blank_linkage_option_set_to_false
+            @post.comments = []
+            @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, include: 'bio,posts', include_blank_linkage: false)
+
+            refute @adapter.serializable_hash[:data][:links].key?(:comments)
+          end
+
 
           def test_includes_linked_comments
             @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, include: 'comments')
