@@ -192,6 +192,14 @@ resources in the `"included"` member when the resource names are included in the
   render @posts, include: 'authors,comments'
 ```
 
+##### Linkage
+An `allow_blank_linkage` option is available for the JSON API adapter and can be set
+to `false` in order to remove nil/empty linkages.
+
+```ruby
+ActiveModel::Serializer::Adapter::JsonApi.new(serializer, allow_blank_linkage: false)
+```
+
 ## Installation
 
 Add this line to your application's Gemfile:

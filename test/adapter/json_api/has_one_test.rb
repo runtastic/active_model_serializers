@@ -27,12 +27,27 @@ module ActiveModel
 
             @serializer = AuthorSerializer.new(@author)
             @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, include: 'bio,posts')
+            ActionController::Base.cache_store.clear
           end
 
-          def test_includes_bio_id
+          def test_includes_bio_linkage
             expected = { linkage: { type: "bios", id: "43" } }
 
             assert_equal(expected, @adapter.serializable_hash[:data][:links][:bio])
+          end
+
+          def test_includes_nil_bio_linkage
+            @author.bio = nil
+            expected = { linkage: nil }
+
+            assert_equal(expected, @adapter.serializable_hash[:data][:links][:bio])
+          end
+
+          def test_allow_blank_linkage_option_set_to_false
+            @author.bio = nil
+            @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, include: 'bio,posts', include_blank_linkage: false)
+
+            refute @adapter.serializable_hash[:data][:links].key?(:bio)
           end
 
           def test_includes_linked_bio
