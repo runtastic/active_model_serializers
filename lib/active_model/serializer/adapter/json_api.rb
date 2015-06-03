@@ -7,7 +7,7 @@ module ActiveModel
 
         def initialize(serializer, options = {})
           super
-          @options = config.default_options.merge(@options)
+          @options.reverse_merge!(config.default_options)
 
           serializer.root = true
           @hash = { data: [] }
