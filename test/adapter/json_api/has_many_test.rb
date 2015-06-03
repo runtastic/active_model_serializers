@@ -48,11 +48,23 @@ module ActiveModel
 
           def test_allow_blank_linkage_option_set_to_false
             @post.comments = []
-            @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, include: 'bio,posts', include_blank_linkage: false)
+            @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, include_blank_linkage: false)
 
             refute @adapter.serializable_hash[:data][:links].key?(:comments)
           end
 
+          def test_allow_blank_linkage_config
+            config = ActiveModel::Serializer::Adapter::JsonApi.config
+            default_options = config.default_options
+            config.default_options = { include_blank_linkage: false }
+
+            @post.comments = []
+            @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, include: 'bio,posts')
+
+            refute @adapter.serializable_hash[:data][:links].key?(:comments)
+
+            config.default_options = default_options
+          end
 
           def test_includes_linked_comments
             @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, include: 'comments')
