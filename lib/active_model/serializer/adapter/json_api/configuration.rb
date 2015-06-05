@@ -7,7 +7,10 @@ module ActiveModel
           extend ActiveSupport::Concern
 
           included do |base|
-            base.config.default_options = { include_blank_linkage: true }
+            base.config.default_options = {
+              include_blank_linkage: true,
+              prevent_duplicates: false
+            }
           end
         end
       end
