@@ -20,8 +20,9 @@ module ActiveModel
         end
 
         def serializable_hash(options = {})
-          hash = serializable_hash_with_duplicates
-          remove_duplicates(hash)
+          serializable_hash_with_duplicates
+          remove_duplicates
+          @hash
         end
 
         protected
@@ -44,27 +45,28 @@ module ActiveModel
               @hash
             end
           end
-          @hash
         end
 
         private
 
-        def remove_duplicates(hash)
-          if @options[:prevent_duplicates] && hash[:included] && hash[:data].is_a?(Array)
-            ids_per_type = {}
-            hash[:data].each do |resource|
-              type = resource[:type]
-              ids_per_type[type] ||= Set.new
-              ids_per_type[type] << resource[:id]
-            end
-            hash[:included].select! do |included|
-              type = included[:type]
-              id   = included[:id]
-              not_in_data?(ids_per_type, type, id)
-            end
-            hash.delete(:included) if hash[:included].empty?
+        def remove_duplicates
+          return unless prevent_duplicates?
+          ids_per_type = {}
+          @hash[:data].each do |resource|
+            type = resource[:type]
+            ids_per_type[type] ||= Set.new
+            ids_per_type[type] << resource[:id]
           end
-          hash
+          @hash[:included].select! do |included|
+            type = included[:type]
+            id   = included[:id]
+            not_in_data?(ids_per_type, type, id)
+          end
+          @hash.delete(:included) if @hash[:included].empty?
+        end
+
+        def prevent_duplicates?
+          @hash && @options[:prevent_duplicates] && @hash[:included] && @hash[:data].is_a?(Array)
         end
 
         def not_in_data?(ids_per_type, type, id)

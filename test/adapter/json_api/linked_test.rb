@@ -331,6 +331,24 @@ module ActiveModel
 
             assert_equal false, adapter.serializable_hash.has_key?(:included)
           end
+
+          def test_no_included_after_duplication_removal_using_config
+            config = ActiveModel::Serializer::Adapter::JsonApi.config
+            default_options = config.default_options
+            config.default_options = { prevent_duplicates: true }
+
+
+            @first_post.comments = [@first_comment]
+            serializer = ArraySerializer.new([@first_post, @first_comment])
+            adapter = ActiveModel::Serializer::Adapter::JsonApi.new(
+              serializer,
+              include: ['comments']
+            )
+
+            assert_equal false, adapter.serializable_hash.has_key?(:included)
+
+            config.default_options = default_options
+          end
         end
       end
     end
