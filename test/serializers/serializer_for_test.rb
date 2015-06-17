@@ -29,10 +29,14 @@ module ActiveModel
       class SerializerTest <  Minitest::Test
         class MyProfile < Profile
         end
+        class CustomProfile
+          def serializer_class; ProfileSerializer; end
+        end
 
         def setup
           @profile = Profile.new
           @my_profile = MyProfile.new
+          @custom_profile = CustomProfile.new
           @model = ::Model.new
         end
 
@@ -55,6 +59,11 @@ module ActiveModel
           post = Post.new
           serializer = ActiveModel::Serializer.serializer_for(post, { namespace: Test::Serializer })
           assert_equal Test::Serializer::Post, serializer
+        end
+
+        def test_serializer_custom_serializer
+          serializer = ActiveModel::Serializer.serializer_for(@custom_profile)
+          assert_equal ProfileSerializer, serializer
         end
       end
     end

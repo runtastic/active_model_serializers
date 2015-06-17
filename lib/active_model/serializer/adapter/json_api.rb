@@ -1,3 +1,5 @@
+require 'active_model/serializer/adapter/json_api/fragment_cache'
+
 module ActiveModel
   class Serializer
     class Adapter
@@ -9,8 +11,7 @@ module ActiveModel
           super
           @options.reverse_merge!(config.default_options)
 
-          serializer.root = true
-          @hash = { data: [] }
+          @hash = { data: Set.new }
 
           if fields = options.delete(:fields)
             @fieldset = ActiveModel::Serializer::Fieldset.new(fields, serializer.json_key)
@@ -25,25 +26,29 @@ module ActiveModel
           @hash
         end
 
+        def fragment_cache(cached_hash, non_cached_hash)
+          root = false if @options.include?(:include)
+          JsonApi::FragmentCache.new().fragment_cache(root, cached_hash, non_cached_hash)
+        end
+
         protected
 
         def serializable_hash_with_duplicates
           if serializer.respond_to?(:each)
+            
             serializer.each do |s|
               result = self.class.new(s, @options.merge(fieldset: @fieldset)).serializable_hash_with_duplicates
               @hash[:data] << result[:data]
 
               if result[:included]
-                @hash[:included] ||= []
+                @hash[:included] ||= Set.new
                 @hash[:included] |= result[:included]
               end
             end
           else
-            @hash = cached_object do
-              @hash[:data] = attributes_for_serializer(serializer, @options)
-              add_resource_links(@hash[:data], serializer)
-              @hash
-            end
+            @hash[:data] = attributes_for_serializer(serializer, @options)
+            add_resource_relationships(@hash[:data], serializer)
+            @hash
           end
         end
 
@@ -51,38 +56,28 @@ module ActiveModel
 
         def remove_duplicates
           return unless prevent_duplicates?
-          ids_per_type = {}
-          @hash[:data].each do |resource|
-            type = resource[:type]
-            ids_per_type[type] ||= Set.new
-            ids_per_type[type] << resource[:id]
-          end
-          @hash[:included].select! do |included|
-            type = included[:type]
-            id   = included[:id]
-            not_in_data?(ids_per_type, type, id)
-          end
+          @hash[:included] -= @hash[:data]
           @hash.delete(:included) if @hash[:included].empty?
         end
 
         def prevent_duplicates?
-          @hash && @options[:prevent_duplicates] && @hash[:included] && @hash[:data].is_a?(Array)
+          @hash && @options[:prevent_duplicates] && @hash[:included] && @hash[:data].respond_to?(:each)
         end
 
         def not_in_data?(ids_per_type, type, id)
           !ids_per_type[type].try(:include?, id)
         end
 
-        def add_links(resource, name, serializers)
-          resource[:links][name] = { linkage: [] } if @options[:include_blank_linkage]
-          linkage = serializers.map { |serializer| { type: serializer.type, id: serializer.id.to_s } }
-          resource[:links][name] = { linkage: linkage } unless linkage.empty?
+        def add_relationships(resource, name, serializers)
+          resource[:relationships][name] = { data: [] } unless @options[:exclude_blank_linkage]
+          data = serializers.map { |serializer| { type: serializer.type, id: serializer.id.to_s } }
+          resource[:relationships][name] = { data: data } unless data.empty?
         end
 
-        def add_link(resource, name, serializer)
-          resource[:links][name] = { linkage: nil } if @options[:include_blank_linkage]
+        def add_relationship(resource, name, serializer, val=nil)
+          resource[:relationships][name] = { data: nil } unless @options[:exclude_blank_linkage]
           if serializer && serializer.object
-            resource[:links][name] = { linkage: { type: serializer.type, id: serializer.id.to_s } }
+            resource[:relationships][name] = { data: { type: serializer.type, id: serializer.id.to_s } }
           end
         end
 
@@ -92,15 +87,16 @@ module ActiveModel
             serializers = Array(serializers)
           end
           resource_path = [parent, resource_name].compact.join('.')
+
           if include_assoc?(resource_path)
-            @hash[:included] ||= []
+            @hash[:included] ||= Set.new
 
             serializers.each do |serializer|
               attrs = attributes_for_serializer(serializer, @options)
 
-              add_resource_links(attrs, serializer, add_included: false)
+              add_resource_relationships(attrs, serializer, add_included: false)
 
-              @hash[:included].push(attrs) unless @hash[:included].include?(attrs)
+              @hash[:included] << attrs unless @hash[:included].include?(attrs)
             end
           end
 
@@ -111,25 +107,33 @@ module ActiveModel
           end
         end
 
-
         def attributes_for_serializer(serializer, options)
           if serializer.respond_to?(:each)
             result = []
             serializer.each do |object|
-              options[:fields] = @fieldset && @fieldset.fields_for(serializer)
-              options[:required_fields] = [:id, :type]
-              attributes = object.attributes(options)
-              attributes[:id] = attributes[:id].to_s
-              result << attributes
+              result << resource_object_for(object, options)
             end
           else
-            options[:fields] = @fieldset && @fieldset.fields_for(serializer)
-            options[:required_fields] = [:id, :type]
-            result = serializer.attributes(options)
-            result[:id] = result[:id].to_s
+            result = resource_object_for(serializer, options)
           end
-
           result
+        end
+
+        def resource_object_for(serializer, options)
+          options[:fields] = @fieldset && @fieldset.fields_for(serializer)
+          options[:required_fields] = [:id, :type]
+
+          cache_check(serializer) do
+            attributes = serializer.attributes(options)
+
+            result = {
+              id: attributes.delete(:id).to_s,
+              type: attributes.delete(:type)
+            }
+
+            result[:attributes] = attributes if attributes.any?
+            result
+          end
         end
 
         def include_assoc?(assoc)
@@ -150,16 +154,20 @@ module ActiveModel
           end
         end
 
-        def add_resource_links(attrs, serializer, options = {})
+        def add_resource_relationships(attrs, serializer, options = {})
           options[:add_included] = options.fetch(:add_included, true)
 
           serializer.each_association do |name, association, opts|
-            attrs[:links] ||= {}
+            attrs[:relationships] ||= {}
 
             if association.respond_to?(:each)
-              add_links(attrs, name, association)
+              add_relationships(attrs, name, association)
             else
-              add_link(attrs, name, association)
+              if opts[:virtual_value]
+                add_relationship(attrs, name, nil, opts[:virtual_value])
+              else
+                add_relationship(attrs, name, association)
+              end
             end
 
             if options[:add_included]

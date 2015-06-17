@@ -6,6 +6,7 @@ module ActiveModel
       class Json
         class HasManyTestTest < Minitest::Test
           def setup
+            ActionController::Base.cache_store.clear
             @author = Author.new(id: 1, name: 'Steve K.')
             @post = Post.new(title: 'New Post', body: 'Body')
             @first_comment = Comment.new(id: 1, body: 'ZOMG A COMMENT')
@@ -25,7 +26,7 @@ module ActiveModel
             assert_equal([
                            {id: 1, body: 'ZOMG A COMMENT'},
                            {id: 2, body: 'ZOMG ANOTHER COMMENT'}
-                         ], @adapter.serializable_hash[:comments])
+                         ], @adapter.serializable_hash[:post][:comments])
           end
         end
       end

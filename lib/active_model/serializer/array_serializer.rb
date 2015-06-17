@@ -8,19 +8,24 @@ module ActiveModel
 
       def initialize(objects, options = {})
         options.merge!(root: nil)
-        @objects = objects.map do |object|
+        @resource = objects
+        @objects  = objects.map do |object|
           serializer_class = options.fetch(
             :serializer,
             ActiveModel::Serializer.serializer_for(object, options)
           )
-          serializer_class.new(object, options)
+          serializer_class.new(object, options.except(:serializer))
         end
         @meta     = options[:meta]
         @meta_key = options[:meta_key]
       end
 
       def json_key
-        @objects.first.json_key if @objects.first
+        if @objects.first
+          @objects.first.json_key.pluralize
+        else
+          @resource.name.downcase.pluralize if @resource.try(:name)
+        end
       end
 
       def root=(root)

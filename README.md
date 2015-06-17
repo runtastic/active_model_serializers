@@ -4,24 +4,21 @@
 
 ActiveModel::Serializers brings convention over configuration to your JSON generation.
 
-AMS does this through two components: **serializers** and **adapters**. Serializers describe _which_ attributes and relationships should be serialized. Adapters describe _how_ attributes and relationships should be serialized.
+AMS does this through two components: **serializers** and **adapters**.
+Serializers describe _which_ attributes and relationships should be serialized.
+Adapters describe _how_ attributes and relationships should be serialized.
 
-# MAINTENANCE, PLEASE READ
+By default AMS will use the **Json Adapter**. But we strongly advise you to use JsonApi Adapter that follows 1.0 of the format specified in [jsonapi.org/format](http://jsonapi.org/format).
+Check how to change the adapter in the sections bellow.
+
+# RELEASE CANDIDATE, PLEASE READ
 
 This is the master branch of AMS. It will become the `0.10.0` release when it's
-ready, but it's not. You probably don't want to use it yet. As such, we recommend
-that any new projects you start use the latest `0.8.x` version of this gem. This
-version is the most widely used, and will most closely resemble the forthcoming release.
-
-There are two released versions of AMS that you may want to use: `0.9.x` and
-`0.8.x`. `9` was recently `master`, so if you were using master, you probably want
-to use it. `8` was the version that was on RubyGems, so if you were using that,
-that's probably what you want.
+ready. Currently this is a release candidate. This is **not** backward
+compatible with `0.9.0` or `0.8.0`.
 
 `0.10.x` will be based on the `0.8.0` code, but with a more flexible
 architecture. We'd love your help. [Learn how you can help here.](https://github.com/rails-api/active_model_serializers/blob/master/CONTRIBUTING.md)
-
-Thanks!
 
 ## Example
 
@@ -181,7 +178,7 @@ end
 
 #### JSONAPI
 
-This adapter follows RC3 of the format specified in
+This adapter follows RC4 of the format specified in
 [jsonapi.org/format](http://jsonapi.org/format). It will include the associated
 resources in the `"included"` member when the resource names are included in the
 `include` option.
@@ -192,19 +189,33 @@ resources in the `"included"` member when the resource names are included in the
   render @posts, include: 'authors,comments'
 ```
 
-##### Linkage
-An `include_blank_linkage` option is available for the JSON API adapter and can be set
-to `false` in order to remove nil/empty linkages.
+##### Nil Attributes
+An `exclude_nil` option is available for the JSON API adapter and can be set
+to `true` in order to remove nil/empty attributes.
 
 You can do it as a global config:
 ```ruby
 ActiveModel::Serializer::Adapter::JsonApi.config.default_options = {
-  include_blank_linkage: false
+  exclude_nil: true,
 }
 ```
 or for each individual serialization:
 ```ruby
-ActiveModel::Serializer::Adapter::JsonApi.new(serializer, allow_blank_linkage: false)
+ActiveModel::Serializer::Adapter::JsonApi.new(serializer, exclude_nil: true)
+```
+##### Linkage
+An `exclude_blank_linkage` option is available for the JSON API adapter and can be set
+to `true` in order to remove nil/empty linkages.
+
+You can do it as a global config:
+```ruby
+ActiveModel::Serializer::Adapter::JsonApi.config.default_options = {
+  exclude_blank_linkage: true,
+}
+```
+or for each individual serialization:
+```ruby
+ActiveModel::Serializer::Adapter::JsonApi.new(serializer, exclude_blank_linkage: true)
 ```
 
 ## Installation
@@ -310,7 +321,10 @@ The options are the same options of ```ActiveSupport::Cache::Store```, plus
 a ```key``` option that will be the prefix of the object cache
 on a pattern ```"#{key}/#{object.id}-#{object.updated_at}"```.
 
+The cache support is optimized to use the cached object in multiple request. An object cached on a ```show``` request will be reused at the ```index```. If there is a relationship with another cached serializer it will also be created and reused automatically.
+
 **[NOTE] Every object is individually cached.**
+
 **[NOTE] The cache is automatically expired after update an object but it's not deleted.**
 
 ```ruby
@@ -333,6 +347,27 @@ end
 On this example every ```Post``` object will be cached with
 the key ```"post/#{post.id}-#{post.updated_at}"```. You can use this key to expire it as you want,
 but in this case it will be automatically expired after 3 hours.
+
+### Fragmenting Caching
+
+If there is some API endpoint that shouldn't be fully cached, you can still optimise it, using Fragment Cache on the attributes and relationships that you want to cache.
+
+You can define the attribute by using ```only``` or ```except``` option on cache method.
+
+**[NOTE] Cache serializers will be used at their relationships**
+
+Example:
+
+```ruby
+class PostSerializer < ActiveModel::Serializer
+  cache key: 'post', expires_in: 3.hours, only: [:title]
+  attributes :title, :body
+
+  has_many :comments
+
+  url :post
+end
+```
 
 ## Getting Help
 
