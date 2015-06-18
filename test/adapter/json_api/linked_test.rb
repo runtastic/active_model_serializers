@@ -356,8 +356,6 @@ module ActiveModel
               prevent_duplicates: true
             )
 
-            puts adapter.serializable_hash
-
             assert_equal false, adapter.serializable_hash.has_key?(:included)
           end
 

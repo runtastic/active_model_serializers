@@ -64,11 +64,7 @@ end
 class ProfileWithNilAttrSerializer < ActiveModel::Serializer
   attributes :name, :description, :nil_attr
 
-  urls :posts, :comments
-
-  def arguments_passed_in?
-    options[:my_options] == :accessible
-  end
+  has_many :posts
 end
 
 class ProfilePreviewSerializer < ActiveModel::Serializer
