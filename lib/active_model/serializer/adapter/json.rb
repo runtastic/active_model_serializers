@@ -5,6 +5,7 @@ module ActiveModel
     class Adapter
       class Json < Adapter
         def serializable_hash(options = {})
+          options.reverse_merge!(@options)
           if serializer.respond_to?(:each)
             @result = serializer.map{|s| FlattenJson.new(s).serializable_hash }
           else
