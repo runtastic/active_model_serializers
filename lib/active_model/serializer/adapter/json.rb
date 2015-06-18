@@ -7,7 +7,7 @@ module ActiveModel
         def serializable_hash(options = {})
           options.reverse_merge!(@options)
           if serializer.respond_to?(:each)
-            @result = serializer.map{|s| FlattenJson.new(s).serializable_hash }
+            @result = serializer.map{|s| FlattenJson.new(s, options).serializable_hash }
           else
             @hash = {}
 
