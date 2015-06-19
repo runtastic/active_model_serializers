@@ -6,7 +6,7 @@ module ActionController
 
     include ActionController::Renderers
 
-    ADAPTER_OPTION_KEYS = [:include, :fields, :root, :adapter]
+    ADAPTER_OPTION_KEYS = [:include, :fields, :adapter]
 
     included do
       class_attribute :_serialization_scope
@@ -51,6 +51,14 @@ module ActionController
           super(resource, options)
         end
       end
+    end
+
+    def rescue_with_handler(exception)
+      @_serializer = nil
+      @_serializer_opts = nil
+      @_adapter_opts = nil
+
+      super(exception)
     end
 
     module ClassMethods

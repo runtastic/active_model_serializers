@@ -1,5 +1,4 @@
 require 'test_helper'
-
 module ActiveModel
   class Serializer
     class Adapter
@@ -52,81 +51,99 @@ module ActiveModel
             )
 
             expected = {
-              data: [
+              data: Set.new([
                 {
                   id: "10",
-                  title: "Hello!!",
-                  body: "Hello, world!!",
                   type: "posts",
-                  links: {
-                    comments: { linkage: [ { type: "comments", id: '1' }, { type: "comments", id: '2' } ] },
-                    blog: { linkage: { type: "blogs", id: "999" } },
-                    author: { linkage: { type: "authors", id: "1" } }
+                  attributes: {
+                    title: "Hello!!",
+                    body: "Hello, world!!"
+                  },
+                  relationships: {
+                    comments: { data: [ { type: "comments", id: '1' }, { type: "comments", id: '2' } ] },
+                    blog: { data: { type: "blogs", id: "999" } },
+                    author: { data: { type: "authors", id: "1" } }
                   }
                 },
                 {
                   id: "20",
-                  title: "New Post",
-                  body: "Body",
                   type: "posts",
-                  links: {
-                    comments: { linkage: [] },
-                    blog: { linkage: { type: "blogs", id: "999" } },
-                    author: { linkage: { type: "authors", id: "2" } }
+                  attributes: {
+                    title: "New Post",
+                    body: "Body"
+                  },
+                  relationships: {
+                    comments: { data: [] },
+                    blog: { data: { type: "blogs", id: "999" } },
+                    author: { data: { type: "authors", id: "2" } }
                   }
                 }
-              ],
-              included: [
+              ]),
+              included: Set.new([
                 {
                   id: "1",
-                  body: "ZOMG A COMMENT",
                   type: "comments",
-                  links: {
-                    post: { linkage: { type: "posts", id: "10" } },
-                    author: { linkage: nil }
+                  attributes: {
+                    body: "ZOMG A COMMENT"
+                  },
+                  relationships: {
+                    post: { data: { type: "posts", id: "10" } },
+                    author: { data: nil }
                   }
                 }, {
                   id: "2",
-                  body: "ZOMG ANOTHER COMMENT",
                   type: "comments",
-                  links: {
-                    post: { linkage: { type: "posts", id: "10" } },
-                    author: { linkage: nil }
+                  attributes: {
+                    body: "ZOMG ANOTHER COMMENT",
+                  },
+                  relationships: {
+                    post: { data: { type: "posts", id: "10" } },
+                    author: { data: nil }
                   }
                 }, {
                   id: "1",
-                  name: "Steve K.",
                   type: "authors",
-                  links: {
-                    posts: { linkage: [ { type: "posts", id: "10" }, { type: "posts", id: "30" } ] },
-                    roles: { linkage: [] },
-                    bio: { linkage: { type: "bios", id: "1" } }
+                  attributes: {
+                    name: "Steve K."
+                  },
+                  relationships: {
+                    posts: { data: [ { type: "posts", id: "10" }, { type: "posts", id: "30" } ] },
+                    roles: { data: [] },
+                    bio: { data: { type: "bios", id: "1" } }
                   }
                 }, {
                   id: "1",
-                  content: "AMS Contributor",
                   type: "bios",
-                  links: {
-                    author: { linkage: { type: "authors", id: "1" } }
+                  attributes: {
+                    content: "AMS Contributor",
+                    rating: nil
+                  },
+                  relationships: {
+                    author: { data: { type: "authors", id: "1" } }
                   }
                 }, {
                   id: "2",
-                  name: "Tenderlove",
                   type: "authors",
-                  links: {
-                    posts: { linkage: [ { type: "posts", id:"20" } ] },
-                    roles: { linkage: [] },
-                    bio: { linkage: { type: "bios", id: "2" } }
+                  attributes: {
+                    name: "Tenderlove"
+                  },
+                  relationships: {
+                    posts: { data: [ { type: "posts", id:"20" } ] },
+                    roles: { data: [] },
+                    bio: { data: { type: "bios", id: "2" } }
                   }
                 }, {
                   id: "2",
-                  content: "Rails Contributor",
                   type: "bios",
-                  links: {
-                    author: { linkage: { type: "authors", id: "2" } }
+                  attributes: {
+                    rating: nil,
+                    content: "Rails Contributor",
+                  },
+                  relationships: {
+                    author: { data: { type: "authors", id: "2" } }
                   }
                 }
-              ]
+              ])
             }
             assert_equal expected, adapter.serializable_hash
             assert_equal expected, alt_adapter.serializable_hash
@@ -143,58 +160,64 @@ module ActiveModel
               include: 'author,author.posts'
             )
 
-            expected = [
+            expected = Set.new([
               {
                 id: "1",
                 type: "authors",
-                name: "Steve K.",
-                links: {
-                  posts: { linkage: [ { type: "posts", id: "10"}, { type: "posts", id: "30" }] },
-                  roles: { linkage: [] },
-                  bio: { linkage: { type: "bios", id: "1" }}
+                attributes: {
+                  name: "Steve K."
+                },
+                relationships: {
+                  posts: { data: [ { type: "posts", id: "10"}, { type: "posts", id: "30" }] },
+                  roles: { data: [] },
+                  bio: { data: { type: "bios", id: "1" }}
                 }
               }, {
                 id: "10",
                 type: "posts",
-                title: "Hello!!",
-                body: "Hello, world!!",
-                links: {
-                  comments: { linkage: [ { type: "comments", id: "1"}, { type: "comments", id: "2" }] },
-                  blog: { linkage: { type: "blogs", id: "999" } },
-                  author: { linkage: { type: "authors", id: "1" } }
+                attributes: {
+                  title: "Hello!!",
+                  body: "Hello, world!!"
+                },
+                relationships: {
+                  comments: { data: [ { type: "comments", id: "1"}, { type: "comments", id: "2" }] },
+                  blog: { data: { type: "blogs", id: "999" } },
+                  author: { data: { type: "authors", id: "1" } }
                 }
               }, {
                 id: "30",
                 type: "posts",
-                title: "Yet Another Post",
-                body: "Body",
-                links: {
-                  comments: { linkage: [] },
-                  blog: { linkage: { type: "blogs", id: "999" } },
-                  author: { linkage: { type: "authors", id: "1" } }
+                attributes: {
+                  title: "Yet Another Post",
+                  body: "Body"
+                },
+                relationships: {
+                  comments: { data: [] },
+                  blog: { data: { type: "blogs", id: "999" } },
+                  author: { data: { type: "authors", id: "1" } }
                 }
               }
-            ]
+            ])
 
             assert_equal expected, adapter.serializable_hash[:included]
             assert_equal expected, alt_adapter.serializable_hash[:included]
           end
 
-          def test_ignore_model_namespace_for_linked_resource_type
+          def test_underscore_model_namespace_for_linked_resource_type
             spammy_post = Post.new(id: 123)
             spammy_post.related = [Spam::UnrelatedLink.new(id: 456)]
             serializer = SpammyPostSerializer.new(spammy_post)
             adapter = ActiveModel::Serializer::Adapter::JsonApi.new(serializer)
-            links = adapter.serializable_hash[:data][:links]
+            relationships = adapter.serializable_hash[:data][:relationships]
             expected = {
               related: {
-                linkage: [{
-                  type: 'unrelated_links',
+                data: [{
+                  type: 'spam_unrelated_links',
                   id: '456'
                 }]
               }
             }
-            assert_equal expected, links
+            assert_equal expected, relationships
           end
 
           def test_multiple_references_to_same_resource
@@ -204,25 +227,27 @@ module ActiveModel
               include: ['post']
             )
 
-            expected = [
+            expected = Set.new([
               {
                 id: "10",
-                title: "Hello!!",
-                body: "Hello, world!!",
                 type: "posts",
-                links: {
+                attributes: {
+                  title: "Hello!!",
+                  body: "Hello, world!!"
+                },
+                relationships: {
                   comments: {
-                    linkage: [{type: "comments", id: "1"}, {type: "comments", id: "2"}]
+                    data: [{type: "comments", id: "1"}, {type: "comments", id: "2"}]
                   },
                   blog: {
-                    linkage: {type: "blogs", id: "999"}
+                    data: {type: "blogs", id: "999"}
                   },
                   author: {
-                    linkage: {type: "authors", id: "1"}
+                    data: {type: "authors", id: "1"}
                   }
                 }
               }
-            ]
+            ])
 
             assert_equal expected, adapter.serializable_hash[:included]
           end
@@ -238,12 +263,14 @@ module ActiveModel
             expected = {
               data: {
                 id: "10",
-                title: "Hello!!",
-                body: "Hello, world!!",
                 type: "posts",
-                links: {
-                  comments: { linkage: [ { type: "comments", id: '1' }, { type: "comments", id: '2' } ] },
-                  author: { linkage: nil }
+                attributes: {
+                  title: "Hello!!",
+                  body: "Hello, world!!"
+                },
+                relationships: {
+                  comments: { data: [ { type: "comments", id: '1' }, { type: "comments", id: '2' } ] },
+                  author: { data: nil }
                 }
               }
             }
@@ -257,34 +284,34 @@ module ActiveModel
               include: ['author', 'comments']
             )
 
-            expected = [
+            expected = Set.new([
               {
                 id:"1",
-                body:"ZOMG A COMMENT",
+                attributes: { body:"ZOMG A COMMENT" },
                 type:"comments",
-                links:{
-                  post: { linkage: { type:"posts", id:"10" } },
-                  author: { linkage: nil} }
+                relationships:{
+                  post: { data: { type:"posts", id:"10" } },
+                  author: { data: nil} }
               },
               {
                 id: "2",
-                body: "ZOMG ANOTHER COMMENT",
+                attributes: { body:"ZOMG ANOTHER COMMENT" },
                 type: "comments",
-                links: {
-                  post: { linkage: { type: "posts", id: "10" } },
-                  author: { linkage: nil }
+                relationships: {
+                  post: { data: { type: "posts", id: "10" } },
+                  author: { data: nil }
                 }
               }, {
                 id: "1",
-                name: "Steve K.",
+                attributes: { name: "Steve K." },
                 type: "authors",
-                links: {
-                  posts: { linkage: [ { type: "posts", id: "10" }, { type: "posts", id: "30" } ] },
-                  roles: { linkage: [] },
-                  bio: { linkage: { type: "bios", id: "1" } }
+                relationships: {
+                  posts: { data: [ { type: "posts", id: "10" }, { type: "posts", id: "30" } ] },
+                  roles: { data: [] },
+                  bio: { data: { type: "bios", id: "1" } }
                 }
               }
-            ]
+            ])
             assert_equal expected, adapter.serializable_hash[:included]
           end
 
@@ -296,26 +323,26 @@ module ActiveModel
               prevent_duplicates: true
             )
 
-            expected = [
+            expected = Set.new([
               {
                 id: "2",
-                body: "ZOMG ANOTHER COMMENT",
+                attributes: { body: "ZOMG ANOTHER COMMENT" },
                 type: "comments",
-                links: {
-                  post: { linkage: { type: "posts", id: "10" } },
-                  author: { linkage: nil }
+                relationships: {
+                  post: { data: { type: "posts", id: "10" } },
+                  author: { data: nil }
                 }
               }, {
                 id: "1",
-                name: "Steve K.",
+                attributes: { name: "Steve K." },
                 type: "authors",
-                links: {
-                  posts: { linkage: [ { type: "posts", id: "10" }, { type: "posts", id: "30" } ] },
-                  roles: { linkage: [] },
-                  bio: { linkage: { type: "bios", id: "1" } }
+                relationships: {
+                  posts: { data: [ { type: "posts", id: "10" }, { type: "posts", id: "30" } ] },
+                  roles: { data: [] },
+                  bio: { data: { type: "bios", id: "1" } }
                 }
               }
-            ]
+            ])
             assert_equal expected, adapter.serializable_hash[:included]
           end
 

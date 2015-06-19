@@ -8,8 +8,9 @@ module ActiveModel
 
           included do |base|
             base.config.default_options = {
-              include_blank_linkage: true,
-              prevent_duplicates: false
+              exclude_nil:           false,
+              exclude_blank_linkage: false,
+              prevent_duplicates:    false
             }
           end
         end

@@ -10,41 +10,58 @@ module ActiveModel
 
     class << self
       attr_accessor :_attributes
+      attr_accessor :_attributes_keys
       attr_accessor :_associations
       attr_accessor :_urls
       attr_accessor :_cache
+      attr_accessor :_fragmented
       attr_accessor :_cache_key
+      attr_accessor :_cache_only
+      attr_accessor :_cache_except
       attr_accessor :_cache_options
+      attr_accessor :_cache_digest
     end
 
     def self.inherited(base)
       base._attributes = self._attributes.try(:dup)  || []
+      base._attributes_keys = self._attributes_keys.try(:dup) || {}
       base._associations = self._associations.try(:dup) || {}
       base._urls = []
+      serializer_file = File.open(caller.first[/^[^:]+/])
+      base._cache_digest = Digest::MD5.hexdigest(serializer_file.read)
     end
 
     def self.attributes(*attrs)
+      attrs = attrs.first if attrs.first.class == Array
       @_attributes.concat attrs
+      @_attributes.uniq!
 
       attrs.each do |attr|
         define_method attr do
           object && object.read_attribute_for_serialization(attr)
-        end unless method_defined?(attr)
+        end unless method_defined?(attr) || _fragmented.respond_to?(attr)
       end
     end
 
     def self.attribute(attr, options = {})
       key = options.fetch(:key, attr)
-      @_attributes.concat [key]
+      @_attributes_keys[attr] = {key: key} if key != attr
+      @_attributes << key unless @_attributes.include?(key)
       define_method key do
         object.read_attribute_for_serialization(attr)
-      end unless method_defined?(key)
+      end unless method_defined?(key) || _fragmented.respond_to?(attr)
+    end
+
+    def self.fragmented(serializer)
+      @_fragmented = serializer
     end
 
     # Enables a serializer to be automatically cached
     def self.cache(options = {})
-      @_cache = ActionController::Base.cache_store if Rails.configuration.action_controller.perform_caching
-      @_cache_key = options.delete(:key)
+      @_cache         = ActionController::Base.cache_store if Rails.configuration.action_controller.perform_caching
+      @_cache_key     = options.delete(:key)
+      @_cache_only    = options.delete(:only)
+      @_cache_except  = options.delete(:except)
       @_cache_options = (options.empty?) ? nil : options
     end
 
@@ -102,7 +119,9 @@ module ActiveModel
     end
 
     def self.serializer_for(resource, options = {})
-      if resource.respond_to?(:to_ary)
+      if resource.respond_to?(:serializer_class)
+        resource.serializer_class
+      elsif resource.respond_to?(:to_ary)
         config.array_serializer
       else
         resource_class = resource.class
@@ -131,14 +150,6 @@ module ActiveModel
       adapter_class
     end
 
-    def self._root
-      @@root ||= false
-    end
-
-    def self._root=(root)
-      @@root = root
-    end
-
     def self.root_name
       name.demodulize.underscore.sub(/_serializer$/, '') if name
     end
@@ -146,12 +157,12 @@ module ActiveModel
     attr_accessor :object, :root, :meta, :meta_key, :scope
 
     def initialize(object, options = {})
-      @object   = object
-      @options  = options
-      @root     = options[:root] || (self.class._root ? self.class.root_name : false)
-      @meta     = options[:meta]
-      @meta_key = options[:meta_key]
-      @scope    = options[:scope]
+      @object     = object
+      @options    = options
+      @root       = options[:root]
+      @meta       = options[:meta]
+      @meta_key   = options[:meta_key]
+      @scope      = options[:scope]
 
       scope_name = options[:scope_name]
       if scope_name && !respond_to?(scope_name)
@@ -162,11 +173,7 @@ module ActiveModel
     end
 
     def json_key
-      if root == true || root.nil?
-        self.class.root_name
-      else
-        root
-      end
+      self.class.root_name
     end
 
     def id
@@ -174,7 +181,7 @@ module ActiveModel
     end
 
     def type
-      object.class.to_s.demodulize.underscore.pluralize
+      object.class.model_name.plural
     end
 
     def attributes(options = {})
@@ -188,22 +195,30 @@ module ActiveModel
       attributes += options[:required_fields] if options[:required_fields]
 
       attributes.each_with_object({}) do |name, hash|
-        hash[name] = send(name) if !send(name).nil? || options[:include_nil]
+        unless self.class._fragmented
+          attr_val   = send(name)
+          hash[name] = attr_val unless (attr_val.nil? && options[:exclude_nil])
+        else
+          hash[name] = self.class._fragmented.public_send(name)
+        end
       end
     end
 
     def each_association(&block)
       self.class._associations.dup.each do |name, association_options|
         next unless object
-
         association_value = send(name)
 
         serializer_class = ActiveModel::Serializer.serializer_for(association_value, association_options)
 
-        serializer = serializer_class.new(
-          association_value,
-          options.merge(serializer_from_options(association_options))
-        ) if serializer_class
+        if serializer_class
+          serializer = serializer_class.new(
+            association_value,
+            options.except(:serializer).merge(serializer_from_options(association_options))
+          )
+        elsif !association_value.nil? && !association_value.instance_of?(Object)
+          association_options[:association_options][:virtual_value] = association_value
+        end
 
         if block_given?
           block.call(name, serializer, association_options[:association_options])

@@ -3,7 +3,7 @@ require 'test_helper'
 module ActionController
   module Serialization
     class JsonApiLinkedTest < ActionController::TestCase
-      class MyController < ActionController::Base
+      class JsonApiLinkedTestController < ActionController::Base
         def setup_post
           ActionController::Base.cache_store.clear
           @role1 = Role.new(id: 1, name: 'admin')
@@ -78,7 +78,7 @@ module ActionController
         end
       end
 
-      tests MyController
+      tests JsonApiLinkedTestController
 
       def test_render_resource_without_include
         get :render_resource_without_include
@@ -91,7 +91,7 @@ module ActionController
         response = JSON.parse(@response.body)
         assert response.key? 'included'
         assert_equal 1, response['included'].size
-        assert_equal 'Steve K.', response['included'].first['name']
+        assert_equal 'Steve K.', response['included'].first['attributes']['name']
       end
 
       def test_render_resource_with_nested_has_many_include
@@ -101,25 +101,35 @@ module ActionController
           {
             "id" => "1",
             "type" => "authors",
-            "name" => "Steve K.",
-            "links" => {
-              "posts" => { "linkage" => [] },
-              "roles" => { "linkage" => [{ "type" =>"roles", "id" => "1" }, { "type" =>"roles", "id" => "2" }] },
-              "bio" => { "linkage" => nil }
+            "attributes" => {
+              "name" => "Steve K."
+            },
+            "relationships" => {
+              "posts" => { "data" => [] },
+              "roles" => { "data" => [{ "type" =>"roles", "id" => "1" }, { "type" =>"roles", "id" => "2" }] },
+              "bio" => { "data" => nil }
             }
           }, {
             "id" => "1",
             "type" => "roles",
-            "name" => "admin",
-            "links" => {
-              "author" => { "linkage" => { "type" =>"authors", "id" => "1" } }
+            "attributes" => {
+              "name" => "admin",
+              "description" => nil,
+              "slug" => "admin-1"
+            },
+            "relationships" => {
+              "author" => { "data" => { "type" =>"authors", "id" => "1" } }
             }
           }, {
             "id" => "2",
             "type" => "roles",
-            "name" => "colab",
-            "links" => {
-              "author" => { "linkage" => { "type" =>"authors", "id" => "1" } }
+            "attributes" => {
+              "name" => "colab",
+              "description" => nil,
+              "slug" => "colab-2"
+            },
+            "relationships" => {
+              "author" => { "data" => { "type" =>"authors", "id" => "1" } }
             }
           }
         ]
@@ -131,7 +141,7 @@ module ActionController
         response = JSON.parse(@response.body)
         assert response.key? 'included'
         assert_equal 1, response['included'].size
-        assert_equal 'Anonymous', response['included'].first['name']
+        assert_equal 'Anonymous', response['included'].first['attributes']['name']
       end
 
       def test_render_collection_without_include

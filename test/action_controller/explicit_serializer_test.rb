@@ -3,7 +3,7 @@ require 'test_helper'
 module ActionController
   module Serialization
     class ExplicitSerializerTest < ActionController::TestCase
-      class MyController < ActionController::Base
+      class ExplicitSerializerTestController < ActionController::Base
         def render_using_explicit_serializer
           @profile = Profile.new(name: 'Name 1',
                                  description: 'Description 1',
@@ -55,9 +55,16 @@ module ActionController
 
           render json: [@post], each_serializer: PostPreviewSerializer
         end
+
+        def render_using_explicit_each_serializer
+          location       = Location.new(id: 42, lat: '-23.550520', lng: '-46.633309')
+          place          = Place.new(id: 1337, name: 'Amazing Place', locations: [location])
+
+          render json: place, each_serializer: PlaceSerializer
+        end
       end
 
-      tests MyController
+      tests ExplicitSerializerTestController
 
       def test_render_using_explicit_serializer
         get :render_using_explicit_serializer
@@ -70,17 +77,15 @@ module ActionController
         get :render_array_using_explicit_serializer
         assert_equal 'application/json', @response.content_type
 
-        expected = {
-          'paginated' => [
-            { 'name' => 'Name 1' },
-            { 'name' => 'Name 2' }
-          ]
-        }
+        expected = [
+          { 'name' => 'Name 1' },
+          { 'name' => 'Name 2' }
+        ]
 
         assert_equal expected.to_json, @response.body
       end
 
-      def test_render_array_using_explicit_serializer
+      def test_render_array_using_implicit_serializer
         get :render_array_using_implicit_serializer
         assert_equal 'application/json', @response.content_type
 
@@ -104,6 +109,25 @@ module ActionController
         ]
 
         assert_equal expected.to_json, @response.body
+      end
+
+      def test_render_using_explicit_each_serializer
+        get :render_using_explicit_each_serializer
+
+        expected = {
+          id: 1337,
+          name: "Amazing Place",
+          locations: [
+            {
+              id: 42,
+              lat: "-23.550520",
+              lng: "-46.633309",
+              place: "Nowhere" # is a virtual attribute on LocationSerializer
+            }
+          ]
+        }
+
+        assert_equal expected.to_json, response.body
       end
     end
   end

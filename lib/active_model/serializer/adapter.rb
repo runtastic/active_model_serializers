@@ -1,8 +1,11 @@
+require 'active_model/serializer/adapter/fragment_cache'
+
 module ActiveModel
   class Serializer
     class Adapter
       extend ActiveSupport::Autoload
       autoload :Json
+      autoload :FlattenJson
       autoload :Null
       autoload :JsonApi
 
@@ -19,7 +22,8 @@ module ActiveModel
 
       def as_json(options = {})
         hash = serializable_hash(options)
-        include_meta(hash)
+        include_meta(hash) unless self.class == FlattenJson
+        hash
       end
 
       def self.create(resource, options = {})
@@ -32,7 +36,44 @@ module ActiveModel
         "ActiveModel::Serializer::Adapter::#{adapter.to_s.classify}".safe_constantize
       end
 
+      def fragment_cache(*args)
+        raise NotImplementedError, 'This is an abstract method. Should be implemented at the concrete adapter.'
+      end
+
       private
+
+     def cache_check(serializer)
+        @cached_serializer = serializer
+        @klass             = @cached_serializer.class
+        if is_cached?
+          @klass._cache.fetch(cache_key, @klass._cache_options) do
+            yield
+          end
+        elsif is_fragment_cached?
+          FragmentCache.new(self, @cached_serializer, @options).fetch
+        else
+          yield
+        end
+      end
+
+      def is_cached?
+        @klass._cache && !@klass._cache_only && !@klass._cache_except
+      end
+
+      def is_fragment_cached?
+        @klass._cache_only && !@klass._cache_except || !@klass._cache_only && @klass._cache_except
+      end
+
+      def cache_key
+        parts = []
+        parts << object_cache_key
+        parts << @klass._cache_digest unless @klass._cache_options && @klass._cache_options[:skip_digest]
+        parts.join("/")
+      end
+
+      def object_cache_key
+        (@klass._cache_key) ? "#{@klass._cache_key}/#{@cached_serializer.object.id}-#{@cached_serializer.object.updated_at}" : @cached_serializer.object.cache_key
+      end
 
       def meta
         serializer.meta if serializer.respond_to?(:meta)
@@ -43,26 +84,12 @@ module ActiveModel
       end
 
       def root
-        serializer.json_key
+        serializer.json_key.to_sym if serializer.json_key
       end
 
       def include_meta(json)
-        json[meta_key] = meta if meta && root
+        json[meta_key] = meta if meta
         json
-      end
-
-      private
-
-      def cached_object
-        klass = serializer.class
-        if klass._cache
-          _cache_key = (klass._cache_key) ? "#{klass._cache_key}/#{serializer.object.id}-#{serializer.object.updated_at}" : serializer.object.cache_key
-          klass._cache.fetch(_cache_key, klass._cache_options) do
-            yield
-          end
-        else
-          yield
-        end
       end
     end
   end

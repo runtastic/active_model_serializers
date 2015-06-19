@@ -30,81 +30,70 @@ module ActiveModel
 
             @serializer = PostSerializer.new(@post)
             @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer)
-            ActionController::Base.cache_store.clear
           end
 
-          def test_includes_comments_linkage
-            expected = { linkage: [ { type: "comments", id: "1" }, { type: "comments", id: "2" } ] }
-
-            assert_equal(expected, @adapter.serializable_hash[:data][:links][:comments])
+          def test_includes_comment_ids
+            expected = { data: [ { type: "comments", id: "1" }, { type: "comments", id: "2" } ] }
+            assert_equal(expected, @adapter.serializable_hash[:data][:relationships][:comments])
           end
 
           def test_includes_empty_comments_linkage
             @post.comments = []
-            expected = { linkage: [] }
+            expected = { data: [] }
 
-            assert_equal(expected, @adapter.serializable_hash[:data][:links][:comments])
+            assert_equal(expected, @adapter.serializable_hash[:data][:relationships][:comments])
           end
 
-          def test_allow_blank_linkage_option_set_to_false
+          def test_exclude_blank_linkage_option_set_to_true
             @post.comments = []
-            @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, include_blank_linkage: false)
+            @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, exclude_blank_linkage: true)
 
-            refute @adapter.serializable_hash[:data][:links].key?(:comments)
-          end
-
-          def test_allow_blank_linkage_config
-            config = ActiveModel::Serializer::Adapter::JsonApi.config
-            default_options = config.default_options
-            config.default_options = { include_blank_linkage: false }
-
-            @post.comments = []
-            @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, include: 'bio,posts')
-
-            refute @adapter.serializable_hash[:data][:links].key?(:comments)
-
-            config.default_options = default_options
+            refute @adapter.serializable_hash[:data][:relationships].key?(:comments)
           end
 
           def test_includes_linked_comments
             @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, include: 'comments')
-            expected = [{
+            expected = Set.new([{
               id: "1",
               type: "comments",
-              body: 'ZOMG A COMMENT',
-              links: {
-                post: { linkage: { type: "posts", id: "1" } },
-                author: { linkage: nil }
+              attributes: {
+                body: 'ZOMG A COMMENT'
+              },
+              relationships: {
+                post: { data: { type: "posts", id: "1" } },
+                author: { data: nil }
               }
             }, {
               id: "2",
               type: "comments",
-              body: 'ZOMG ANOTHER COMMENT',
-              links: {
-                post: { linkage: { type: "posts", id: "1" } },
-                author: { linkage: nil }
+              attributes: {
+                body: 'ZOMG ANOTHER COMMENT'
+              },
+              relationships: {
+                post: { data: { type: "posts", id: "1" } },
+                author: { data: nil }
               }
-            }]
+            }])
             assert_equal expected, @adapter.serializable_hash[:included]
           end
 
           def test_limit_fields_of_linked_comments
             @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, include: 'comments', fields: {comment: [:id]})
-            expected = [{
+            expected = Set.new([{
               id: "1",
               type: "comments",
-              links: {
-                post: { linkage: { type: "posts", id: "1" } },
-                author: { linkage: nil }
+              relationships: {
+                post: { data: { type: "posts", id: "1" } },
+                author: { data: nil }
               }
             }, {
               id: "2",
               type: "comments",
-              links: {
-                post: { linkage: { type: "posts", id: "1" } },
-                author: { linkage: nil }
+              relationships: {
+                post: { data: { type: "posts", id: "1" } },
+                author: { data: nil }
               }
-            }]
+            }])
             assert_equal expected, @adapter.serializable_hash[:included]
           end
 
@@ -118,9 +107,9 @@ module ActiveModel
           def test_include_type_for_association_when_different_than_name
             serializer = BlogSerializer.new(@blog)
             adapter = ActiveModel::Serializer::Adapter::JsonApi.new(serializer)
-            actual = adapter.serializable_hash[:data][:links][:articles]
+            actual = adapter.serializable_hash[:data][:relationships][:articles]
             expected = {
-              linkage: [{
+              data: [{
                 type: "posts",
                 id: "1"
               }]
