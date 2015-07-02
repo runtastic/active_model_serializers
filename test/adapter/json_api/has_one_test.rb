@@ -65,7 +65,7 @@ module ActiveModel
           def test_includes_linked_bio
             @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, include: 'bio')
 
-            expected = Set.new([
+            expected = [
               {
                 id: "43",
                 type: "bios",
@@ -77,7 +77,7 @@ module ActiveModel
                   author: { data: { type: "authors", id: "1" } }
                 }
               }
-            ])
+            ]
 
             assert_equal(expected, @adapter.serializable_hash[:included])
           end

@@ -23,6 +23,8 @@ module ActiveModel
         def serializable_hash(options = {})
           serializable_hash_with_duplicates
           remove_duplicates
+          @hash[:data]     = @hash[:data].to_a if serializer.respond_to?(:each)
+          @hash[:included] = @hash[:included].to_a if @hash.key?(:included)
           @hash
         end
 

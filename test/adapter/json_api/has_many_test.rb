@@ -53,7 +53,7 @@ module ActiveModel
 
           def test_includes_linked_comments
             @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, include: 'comments')
-            expected = Set.new([{
+            expected = [{
               id: "1",
               type: "comments",
               attributes: {
@@ -73,13 +73,13 @@ module ActiveModel
                 post: { data: { type: "posts", id: "1" } },
                 author: { data: nil }
               }
-            }])
+            }]
             assert_equal expected, @adapter.serializable_hash[:included]
           end
 
           def test_limit_fields_of_linked_comments
             @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, include: 'comments', fields: {comment: [:id]})
-            expected = Set.new([{
+            expected = [{
               id: "1",
               type: "comments",
               relationships: {
@@ -93,7 +93,7 @@ module ActiveModel
                 post: { data: { type: "posts", id: "1" } },
                 author: { data: nil }
               }
-            }])
+            }]
             assert_equal expected, @adapter.serializable_hash[:included]
           end
 
