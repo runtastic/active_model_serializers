@@ -41,7 +41,7 @@ module ActiveModel
 
           def test_includes_linked_data
             # If CommentPreviewSerializer is applied correctly the body text will not be present in the output
-            expected = Set.new([
+            expected = [
               {
                 id: '1',
                 type: 'comments',
@@ -63,7 +63,7 @@ module ActiveModel
                   posts: { data: [ {type: "posts", id: @post.id.to_s } ] }
                 }
               }
-            ])
+            ]
 
             assert_equal(expected, @adapter.serializable_hash[:included])
           end

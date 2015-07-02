@@ -25,7 +25,7 @@ module ActiveModel
           end
 
           def test_include_multiple_posts
-            expected = Set.new([
+            expected = [
               {
                 id: "1",
                 type: "posts",
@@ -52,7 +52,7 @@ module ActiveModel
                   author: { data: { type: "authors", id: "1" } }
                 }
               }
-            ])
+            ]
 
             assert_equal(expected, @adapter.serializable_hash[:data])
           end
@@ -60,7 +60,7 @@ module ActiveModel
           def test_limiting_fields
             @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(@serializer, fields: ['title'])
 
-            expected = Set.new([
+            expected = [
               {
                 id: "1",
                 type: "posts",
@@ -85,7 +85,7 @@ module ActiveModel
                   author: { data: { type: "authors", id: "1" } }
                 }
               }
-            ])
+            ]
             assert_equal(expected, @adapter.serializable_hash[:data])
           end
 

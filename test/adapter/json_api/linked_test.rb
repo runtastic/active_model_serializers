@@ -51,7 +51,7 @@ module ActiveModel
             )
 
             expected = {
-              data: Set.new([
+              data: [
                 {
                   id: "10",
                   type: "posts",
@@ -78,8 +78,8 @@ module ActiveModel
                     author: { data: { type: "authors", id: "2" } }
                   }
                 }
-              ]),
-              included: Set.new([
+              ],
+              included: [
                 {
                   id: "1",
                   type: "comments",
@@ -143,7 +143,7 @@ module ActiveModel
                     author: { data: { type: "authors", id: "2" } }
                   }
                 }
-              ])
+              ]
             }
             assert_equal expected, adapter.serializable_hash
             assert_equal expected, alt_adapter.serializable_hash
@@ -160,7 +160,7 @@ module ActiveModel
               include: 'author,author.posts'
             )
 
-            expected = Set.new([
+            expected = [
               {
                 id: "1",
                 type: "authors",
@@ -197,7 +197,7 @@ module ActiveModel
                   author: { data: { type: "authors", id: "1" } }
                 }
               }
-            ])
+            ]
 
             assert_equal expected, adapter.serializable_hash[:included]
             assert_equal expected, alt_adapter.serializable_hash[:included]
@@ -227,7 +227,7 @@ module ActiveModel
               include: ['post']
             )
 
-            expected = Set.new([
+            expected = [
               {
                 id: "10",
                 type: "posts",
@@ -247,7 +247,7 @@ module ActiveModel
                   }
                 }
               }
-            ])
+            ]
 
             assert_equal expected, adapter.serializable_hash[:included]
           end
@@ -284,7 +284,7 @@ module ActiveModel
               include: ['author', 'comments']
             )
 
-            expected = Set.new([
+            expected = [
               {
                 id:"1",
                 attributes: { body:"ZOMG A COMMENT" },
@@ -311,7 +311,7 @@ module ActiveModel
                   bio: { data: { type: "bios", id: "1" } }
                 }
               }
-            ])
+            ]
             assert_equal expected, adapter.serializable_hash[:included]
           end
 
@@ -323,7 +323,7 @@ module ActiveModel
               prevent_duplicates: true
             )
 
-            expected = Set.new([
+            expected = [
               {
                 id: "2",
                 attributes: { body: "ZOMG ANOTHER COMMENT" },
@@ -342,7 +342,7 @@ module ActiveModel
                   bio: { data: { type: "bios", id: "1" } }
                 }
               }
-            ])
+            ]
             assert_equal expected, adapter.serializable_hash[:included]
           end
 
