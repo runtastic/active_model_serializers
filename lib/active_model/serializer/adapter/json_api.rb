@@ -50,6 +50,7 @@ module ActiveModel
           else
             @hash[:data] = attributes_for_serializer(serializer, @options)
             add_resource_relationships(@hash[:data], serializer)
+            add_links(@hash[:data], serializer)
             @hash
           end
         end
@@ -97,6 +98,7 @@ module ActiveModel
               attrs = attributes_for_serializer(serializer, @options)
 
               add_resource_relationships(attrs, serializer, add_included: false)
+              add_links(attrs, serializer)
 
               @hash[:included] << attrs unless @hash[:included].include?(attrs)
             end
@@ -178,6 +180,11 @@ module ActiveModel
               end
             end
           end
+        end
+
+        def add_links(attrs, serializer)
+          return unless serializer.respond_to?(:json_api_links)
+          attrs.merge!(links: serializer.json_api_links)
         end
       end
     end
