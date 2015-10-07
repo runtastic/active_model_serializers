@@ -83,6 +83,8 @@ Role     = Class.new(Model)
 User     = Class.new(Model)
 Location = Class.new(Model)
 Place    = Class.new(Model)
+Page     = Class.new(Model)
+Sitemap  = Class.new(Model)
 
 module Spam; end
 Spam::UnrelatedLink = Class.new(Model)
@@ -223,6 +225,16 @@ PostPreviewSerializer = Class.new(ActiveModel::Serializer) do
 
   has_many :comments, serializer: CommentPreviewSerializer
   belongs_to :author, serializer: AuthorPreviewSerializer
+end
+
+PageSerializer = Class.new(ActiveModel::Serializer) do
+  def json_api_links
+    { self: object.href }
+  end
+end
+
+SitemapSerializer = Class.new(ActiveModel::Serializer) do
+  has_many :pages, serializer: PageSerializer
 end
 
 Spam::UnrelatedLinkSerializer = Class.new(ActiveModel::Serializer) do
