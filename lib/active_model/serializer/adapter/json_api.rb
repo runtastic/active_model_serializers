@@ -50,7 +50,7 @@ module ActiveModel
           else
             @hash[:data] = attributes_for_serializer(serializer, @options)
             add_resource_relationships(@hash[:data], serializer)
-            add_links(@hash[:data], serializer)
+            add_resource_links(@hash[:data], serializer)
             @hash
           end
         end
@@ -98,7 +98,7 @@ module ActiveModel
               attrs = attributes_for_serializer(serializer, @options)
 
               add_resource_relationships(attrs, serializer, add_included: false)
-              add_links(attrs, serializer)
+              add_resource_links(attrs, serializer)
 
               @hash[:included] << attrs unless @hash[:included].include?(attrs)
             end
@@ -174,9 +174,9 @@ module ActiveModel
               end
             end
 
-            if association.respond_to?(:json_api_links) &&
+            if association.respond_to?(:relationship_links) &&
                @options[:include].include?(name.to_s)
-              add_links(attrs[:relationships][name], association)
+              add_relationship_links(attrs[:relationships][name], association)
             end
 
             if options[:add_included]
@@ -186,10 +186,15 @@ module ActiveModel
             end
           end
         end
+        
+        def add_relationship_links(attrs, serializer)
+          return unless serializer.respond_to?(:relationship_links)
+          attrs.merge!(links: serializer.relationship_links)
+        end
 
-        def add_links(attrs, serializer)
-          return unless serializer.respond_to?(:json_api_links)
-          attrs.merge!(links: serializer.json_api_links)
+        def add_resource_links(attrs, serializer)
+          return unless serializer.respond_to?(:resource_links)
+          attrs.merge!(links: serializer.resource_links)
         end
       end
     end
