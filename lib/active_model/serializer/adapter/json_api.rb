@@ -174,6 +174,11 @@ module ActiveModel
               end
             end
 
+            if association.respond_to?(:json_api_links) &&
+               @options[:include].include?(name.to_s)
+              add_links(attrs[:relationships][name], association)
+            end
+
             if options[:add_included]
               Array(association).each do |association|
                 add_included(name, association)
