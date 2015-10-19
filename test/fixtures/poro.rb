@@ -228,7 +228,7 @@ PostPreviewSerializer = Class.new(ActiveModel::Serializer) do
 end
 
 PageSerializer = Class.new(ActiveModel::Serializer) do
-  def json_api_links
+  def resource_links
     { self: object.href }
   end
 end
