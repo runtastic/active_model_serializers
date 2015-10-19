@@ -71,7 +71,7 @@ module ActiveModel
           }
         }
 
-        serializer = PageMetaSerializer.new(@page)
+        serializer = ::PageMetaSerializer.new(@page)
         @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(serializer)
 
         assert_equal(expected, @adapter.serializable_hash)

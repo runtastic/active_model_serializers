@@ -76,7 +76,7 @@ module ActiveModel
           resource[:relationships][name] = { data: [] } unless @options[:exclude_blank_linkage]
           data = serializers.map { |serializer| { type: serializer.type, id: serializer.id.to_s } }
           resource[:relationships][name] = { data: data } unless data.empty?
-          add_relationship_meta(resource[:relationships][name], serializer)
+          add_relationship_meta(resource[:relationships][name], serializers.first)
         end
 
         def add_relationship(resource, name, serializer, val=nil)
