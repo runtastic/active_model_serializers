@@ -59,6 +59,23 @@ module ActiveModel
 
         assert_equal(expected, @adapter.serializable_hash)
       end
+      
+      def test_meta_in_resource
+        expected = {
+          :data => {
+            :id => "1515",
+            :type => "pages",
+          },
+          :meta => {
+            :some_info => "i am non compliant info"
+          }
+        }
+
+        serializer = PageMetaSerializer.new(@page)
+        @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(serializer)
+
+        assert_equal(expected, @adapter.serializable_hash)
+      end
     end
   end
 end

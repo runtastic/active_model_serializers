@@ -233,6 +233,13 @@ PageSerializer = Class.new(ActiveModel::Serializer) do
   end
 end
 
+PageMetaSerializer = Class.new(ActiveModel::Serializer) do
+  def resource_meta
+    { some_info: "i am non compliant info" }
+  end
+end
+
+
 SitemapSerializer = Class.new(ActiveModel::Serializer) do
   has_many :pages, serializer: PageSerializer
 end
