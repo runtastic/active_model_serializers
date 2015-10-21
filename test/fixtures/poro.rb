@@ -257,7 +257,8 @@ end
 ProcMetaPostSerializer = Class.new(ActiveModel::Serializer) do
   attributes :id
 
-  has_many :comments, serializer: MetaCommentSerializer, meta: -> (serializer) { { i_am: serializer.meta_value } }
+  has_many :comments, serializer: MetaCommentSerializer,
+                      meta: ->(serializer) { { i_am: serializer.meta_value } }
 
   def meta_value
     :relationship
