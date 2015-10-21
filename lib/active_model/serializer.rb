@@ -124,7 +124,7 @@ module ActiveModel
       if resource.respond_to?(:serializer_class)
         resource.serializer_class
       elsif resource.respond_to?(:to_ary)
-        association_options.fetch(:array_serializer, config.array_serializer)
+        config.array_serializer
       else
         resource_class = resource.class
         namespace = options[:namespace] || association_options[:namespace]

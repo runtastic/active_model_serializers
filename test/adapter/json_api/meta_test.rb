@@ -13,12 +13,7 @@ module ActiveModel
 
             @post.comments = [@comment]
             
-            serializer = MetaPostSerializer.new(@post)
-            @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(serializer, include: "comments")
-          end
-
-          def test_meta
-            expected = {
+            @expected = {
               :data => {
                 :id => "1",
                 :type => "posts",
@@ -46,8 +41,18 @@ module ActiveModel
                 }
               ]
             }
-            
-            assert_equal(expected, @adapter.serializable_hash)
+          end
+
+          def test_meta
+            serializer = MetaPostSerializer.new(@post)
+            adapter = ActiveModel::Serializer::Adapter::JsonApi.new(serializer, include: "comments")
+            assert_equal(@expected, adapter.serializable_hash)
+          end
+          
+          def test_meta_proc
+            serializer = ProcMetaPostSerializer.new(@post)
+            adapter = ActiveModel::Serializer::Adapter::JsonApi.new(serializer, include: "comments")
+            assert_equal(@expected, adapter.serializable_hash)
           end
         end
       end

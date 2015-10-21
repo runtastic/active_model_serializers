@@ -239,12 +239,6 @@ PageMetaSerializer = Class.new(ActiveModel::Serializer) do
   end
 end
 
-MetaCommentsSerializer = Class.new(ActiveModel::Serializer::ArraySerializer) do
-  def relationship_meta
-    { i_am: :relationship }
-  end
-end
-
 MetaCommentSerializer = Class.new(ActiveModel::Serializer) do
   attributes :id
 
@@ -257,7 +251,13 @@ end
 MetaPostSerializer = Class.new(ActiveModel::Serializer) do
   attributes :id
 
-  has_many :comments, serializer: MetaCommentSerializer, array_serializer: MetaCommentsSerializer
+  has_many :comments, serializer: MetaCommentSerializer, meta: { i_am: :relationship }
+end
+
+ProcMetaPostSerializer = Class.new(ActiveModel::Serializer) do
+  attributes :id
+
+  has_many :comments, serializer: MetaCommentSerializer, meta: -> (serializer) { { i_am: :relationship } }
 end
 
 SitemapSerializer = Class.new(ActiveModel::Serializer) do

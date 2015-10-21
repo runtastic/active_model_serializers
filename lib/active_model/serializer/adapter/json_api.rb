@@ -76,14 +76,12 @@ module ActiveModel
           resource[:relationships][name] = { data: [] } unless @options[:exclude_blank_linkage]
           data = serializers.map { |serializer| { type: serializer.type, id: serializer.id.to_s } }
           resource[:relationships][name] = { data: data } unless data.empty?
-          add_relationship_meta(resource[:relationships][name], serializers)
         end
 
         def add_relationship(resource, name, serializer, val=nil)
           resource[:relationships][name] = { data: nil } unless @options[:exclude_blank_linkage]
           if serializer && serializer.object
             resource[:relationships][name] = { data: { type: serializer.type, id: serializer.id.to_s } }
-            add_relationship_meta(resource[:relationships][name], serializer)
           end
         end
 
@@ -177,6 +175,8 @@ module ActiveModel
                 add_relationship(attrs, name, association)
               end
             end
+          
+            add_relationship_meta(attrs[:relationships][name], serializer, opts[:meta])
 
             if association.respond_to?(:relationship_links) &&
               @options[:include].include?(name.to_s)
@@ -206,9 +206,9 @@ module ActiveModel
           attrs.merge!(meta: serializer.resource_meta)
         end
 
-        def add_relationship_meta(attrs, serializer)
-          return unless serializer.respond_to?(:relationship_meta)
-          attrs.merge!(meta: serializer.relationship_meta)
+        def add_relationship_meta(attrs, serializer, meta)
+          val = meta.is_a?(Proc) ? meta.call(serializer) : meta
+          attrs.merge!(meta: val) if val
         end
 
       end
