@@ -50,7 +50,8 @@ module ActiveModel
           else
             @hash[:data] = attributes_for_serializer(serializer, @options)
             add_resource_relationships(@hash[:data], serializer)
-            add_links(@hash[:data], serializer)
+            add_resource_links(@hash[:data], serializer)
+            add_resource_meta(@hash, serializer)
             @hash
           end
         end
@@ -98,7 +99,8 @@ module ActiveModel
               attrs = attributes_for_serializer(serializer, @options)
 
               add_resource_relationships(attrs, serializer, add_included: false)
-              add_links(attrs, serializer)
+              add_resource_links(attrs, serializer)
+              add_resource_meta(attrs, serializer)
 
               @hash[:included] << attrs unless @hash[:included].include?(attrs)
             end
@@ -173,6 +175,13 @@ module ActiveModel
                 add_relationship(attrs, name, association)
               end
             end
+          
+            add_relationship_meta(attrs[:relationships][name], serializer, opts[:meta])
+
+            if association.respond_to?(:relationship_links) &&
+              @options[:include].include?(name.to_s)
+              add_relationship_links(attrs[:relationships][name], association)
+            end
 
             if options[:add_included]
               Array(association).each do |association|
@@ -181,11 +190,27 @@ module ActiveModel
             end
           end
         end
-
-        def add_links(attrs, serializer)
-          return unless serializer.respond_to?(:json_api_links)
-          attrs.merge!(links: serializer.json_api_links)
+        
+        def add_relationship_links(attrs, serializer)
+          return unless serializer.respond_to?(:relationship_links)
+          attrs.merge!(links: serializer.relationship_links)
         end
+
+        def add_resource_links(attrs, serializer)
+          return unless serializer.respond_to?(:resource_links)
+          attrs.merge!(links: serializer.resource_links)
+        end
+
+        def add_resource_meta(attrs, serializer)
+          return unless serializer.respond_to?(:resource_meta)
+          attrs.merge!(meta: serializer.resource_meta)
+        end
+
+        def add_relationship_meta(attrs, serializer, meta)
+          val = meta.is_a?(Proc) ? meta.call(serializer) : meta
+          attrs.merge!(meta: val) if val
+        end
+
       end
     end
   end

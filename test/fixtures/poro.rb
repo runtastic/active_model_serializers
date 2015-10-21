@@ -228,8 +228,40 @@ PostPreviewSerializer = Class.new(ActiveModel::Serializer) do
 end
 
 PageSerializer = Class.new(ActiveModel::Serializer) do
-  def json_api_links
+  def resource_links
     { self: object.href }
+  end
+end
+
+PageMetaSerializer = Class.new(ActiveModel::Serializer) do
+  def resource_meta
+    { some_info: "i am non compliant info" }
+  end
+end
+
+MetaCommentSerializer = Class.new(ActiveModel::Serializer) do
+  attributes :id
+
+  def resource_meta
+    { i_am: :resource }
+  end
+
+end
+
+MetaPostSerializer = Class.new(ActiveModel::Serializer) do
+  attributes :id
+
+  has_many :comments, serializer: MetaCommentSerializer, meta: { i_am: :relationship }
+end
+
+ProcMetaPostSerializer = Class.new(ActiveModel::Serializer) do
+  attributes :id
+
+  has_many :comments, serializer: MetaCommentSerializer,
+                      meta: ->(serializer) { { i_am: serializer.meta_value } }
+
+  def meta_value
+    :relationship
   end
 end
 
