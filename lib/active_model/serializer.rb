@@ -119,13 +119,14 @@ module ActiveModel
     end
 
     def self.serializer_for(resource, options = {})
+      association_options = options.fetch(:association_options, {})
+
       if resource.respond_to?(:serializer_class)
         resource.serializer_class
       elsif resource.respond_to?(:to_ary)
-        config.array_serializer
+        association_options.fetch(:array_serializer, config.array_serializer)
       else
         resource_class = resource.class
-        association_options = options.fetch(:association_options, {})
         namespace = options[:namespace] || association_options[:namespace]
         if namespace
           "#{namespace}::#{resource_class.name.demodulize}".safe_constantize
