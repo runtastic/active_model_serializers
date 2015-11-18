@@ -12,12 +12,15 @@ module ActiveModel
       end
 
       def test_jsonapi
-        serializer = AlternateBlogSerializer.new(@blog, jsonapi: { version: "1.0" })
-        adapter = ActiveModel::Serializer::Adapter::Json.new(serializer, root: 'blog')
+        serializer = AlternateBlogSerializer.new(@blog)
+        adapter = ActiveModel::Serializer::Adapter::JsonApi.new(serializer, root: 'blog', jsonapi: { version: "1.0" })
         expected = {
-          alternate_blog: {
-            id: 1,
-            title: "AMS Hints"
+          data: {
+            id: "1",
+            type: "blogs",
+            attributes: {
+              title: "AMS Hints"
+            }
           },
           jsonapi: {
             version: "1.0"
