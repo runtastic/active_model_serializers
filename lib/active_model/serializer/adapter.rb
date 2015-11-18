@@ -22,7 +22,8 @@ module ActiveModel
 
       def as_json(options = {})
         hash = serializable_hash(options)
-        include_meta(hash) unless self.class == FlattenJson
+        include_meta(hash)    unless self.class == FlattenJson
+        include_jsonapi(hash) unless self.class == FlattenJson
         hash
       end
 
@@ -85,6 +86,15 @@ module ActiveModel
 
       def root
         serializer.json_key.to_sym if serializer.json_key
+      end
+
+      def jsonapi
+        serializer.jsonapi if serializer.respond_to?(:jsonapi)
+      end
+
+      def include_jsonapi(json)
+        json[:jsonapi] = jsonapi if jsonapi
+        json
       end
 
       def include_meta(json)
