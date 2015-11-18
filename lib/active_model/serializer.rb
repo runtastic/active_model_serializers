@@ -155,7 +155,7 @@ module ActiveModel
       name.demodulize.underscore.sub(/_serializer$/, '') if name
     end
 
-    attr_accessor :object, :root, :meta, :meta_key, :scope, :jsonapi
+    attr_accessor :object, :root, :meta, :meta_key, :scope
 
     def initialize(object, options = {})
       @object     = object
@@ -164,7 +164,6 @@ module ActiveModel
       @meta       = options[:meta]
       @meta_key   = options[:meta_key]
       @scope      = options[:scope]
-      @jsonapi    = options[:jsonapi]
 
       scope_name = options[:scope_name]
       if scope_name && !respond_to?(scope_name)
