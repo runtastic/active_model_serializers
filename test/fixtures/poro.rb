@@ -232,8 +232,8 @@ PageSerializer = Class.new(ActiveModel::Serializer) do
     { self: object.href }
   end
 
-  def relationship_links(parent_serializer)
-    { self: "/sitemap/#{parent_serializer.object.id}/page/#{object.id}" }
+  def relationship_links(name, parent_serializer)
+    { self: "/sitemap/#{parent_serializer.object.id}/page/#{object.id}/#{name}" }
   end
 end
 

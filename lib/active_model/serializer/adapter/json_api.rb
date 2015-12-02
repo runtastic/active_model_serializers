@@ -178,7 +178,7 @@ module ActiveModel
             end
 
             add_relationship_meta(attrs[:relationships][name], serializer, opts[:meta])
-            add_relationship_links(attrs[:relationships][name], serializer, association)
+            add_relationship_links(attrs[:relationships][name], name, serializer, association)
 
             if options[:add_included]
               Array(association).each do |association|
@@ -188,9 +188,10 @@ module ActiveModel
           end
         end
 
-        def add_relationship_links(attrs, serializer, association_serializer)
+        def add_relationship_links(attrs, name, serializer, association_serializer)
           return unless association_serializer.respond_to?(:relationship_links)
-          attrs.merge!(links: association_serializer.relationship_links(serializer))
+          links = association_serializer.relationship_links(name, serializer)
+          attrs.merge!(links: links)
         end
 
         def add_resource_links(attrs, serializer)

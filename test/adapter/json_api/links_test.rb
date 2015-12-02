@@ -11,6 +11,28 @@ module ActiveModel
         @sitemap.page = @page
       end
 
+      def test_relationship_links
+        expected = {
+          :data => {
+            :id => "1909",
+            :type => "sitemaps",
+            :relationships => {
+              :page => {
+                :data => {
+                  :type => "pages",
+                  :id => "1515"
+                },
+                :links=>{:self=>"/sitemap/1909/page/1515/page"}
+              }
+            }
+          }
+        }
+        serializer = ::SitemapSerializer.new(@sitemap)
+        @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(serializer)
+
+        assert_equal(expected, @adapter.serializable_hash)
+      end
+      
       def test_links_in_included
         expected = {
           :data => {
@@ -22,7 +44,7 @@ module ActiveModel
                   :type => "pages",
                   :id => "1515"
                 },
-                :links=>{:self=>"/sitemap/1909/page/1515"}
+                :links=>{:self=>"/sitemap/1909/page/1515/page"}
               }
             }
           },
