@@ -8,22 +8,43 @@ module ActiveModel
         ActionController::Base.cache_store.clear
         @sitemap = Sitemap.new(id: "1909", title: 'New Post')
         @page = Page.new(id: "1515", title: "foo", href: "https://d2z0k43lzfi12d.cloudfront.net/blog/wp-content/uploads/2015/09/09_02_Teamphoto-e1441186058964.jpg")
-        @sitemap.pages = [@page]
+        @sitemap.page = @page
       end
 
+      def test_relationship_links
+        expected = {
+          :data => {
+            :id => "1909",
+            :type => "sitemaps",
+            :relationships => {
+              :page => {
+                :data => {
+                  :type => "pages",
+                  :id => "1515"
+                },
+                :links=>{:self=>"/sitemap/1909/page/1515/page"}
+              }
+            }
+          }
+        }
+        serializer = ::SitemapSerializer.new(@sitemap)
+        @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(serializer)
+
+        assert_equal(expected, @adapter.serializable_hash)
+      end
+      
       def test_links_in_included
         expected = {
           :data => {
             :id => "1909",
             :type => "sitemaps",
             :relationships => {
-              :pages => {
-                :data => [
-                  {
-                    :type => "pages",
-                    :id => "1515"
-                  }
-                ]
+              :page => {
+                :data => {
+                  :type => "pages",
+                  :id => "1515"
+                },
+                :links=>{:self=>"/sitemap/1909/page/1515/page"}
               }
             }
           },
@@ -38,7 +59,7 @@ module ActiveModel
           ]
         }
         serializer = ::SitemapSerializer.new(@sitemap)
-        @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(serializer, include: "pages")
+        @adapter = ActiveModel::Serializer::Adapter::JsonApi.new(serializer, include: "page")
 
         assert_equal(expected, @adapter.serializable_hash)
       end

@@ -231,6 +231,10 @@ PageSerializer = Class.new(ActiveModel::Serializer) do
   def resource_links
     { self: object.href }
   end
+
+  def relationship_links(name, parent_serializer)
+    { self: "/sitemap/#{parent_serializer.object.id}/page/#{object.id}/#{name}" }
+  end
 end
 
 PageMetaSerializer = Class.new(ActiveModel::Serializer) do
@@ -266,7 +270,7 @@ ProcMetaPostSerializer = Class.new(ActiveModel::Serializer) do
 end
 
 SitemapSerializer = Class.new(ActiveModel::Serializer) do
-  has_many :pages, serializer: PageSerializer
+  has_one :page, serializer: PageSerializer
 end
 
 Spam::UnrelatedLinkSerializer = Class.new(ActiveModel::Serializer) do

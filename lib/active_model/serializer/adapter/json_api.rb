@@ -38,7 +38,7 @@ module ActiveModel
 
         def serializable_hash_with_duplicates
           if serializer.respond_to?(:each)
-            
+
             serializer.each do |s|
               result = self.class.new(s, @options.merge(fieldset: @fieldset)).serializable_hash_with_duplicates
               @hash[:data] << result[:data]
@@ -176,13 +176,9 @@ module ActiveModel
                 add_relationship(attrs, name, association)
               end
             end
-          
-            add_relationship_meta(attrs[:relationships][name], serializer, opts[:meta])
 
-            if association.respond_to?(:relationship_links) &&
-              @options[:include].include?(name.to_s)
-              add_relationship_links(attrs[:relationships][name], association)
-            end
+            add_relationship_meta(attrs[:relationships][name], serializer, opts[:meta])
+            add_relationship_links(attrs[:relationships][name], name, serializer, association)
 
             if options[:add_included]
               Array(association).each do |association|
@@ -191,10 +187,11 @@ module ActiveModel
             end
           end
         end
-        
-        def add_relationship_links(attrs, serializer)
-          return unless serializer.respond_to?(:relationship_links)
-          attrs.merge!(links: serializer.relationship_links)
+
+        def add_relationship_links(attrs, name, serializer, association_serializer)
+          return unless association_serializer.respond_to?(:relationship_links)
+          links = association_serializer.relationship_links(name, serializer)
+          attrs.merge!(links: links)
         end
 
         def add_resource_links(attrs, serializer)
