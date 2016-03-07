@@ -19,16 +19,28 @@ module ActiveModelSerializers
         private
 
         def type_for(serializer)
-          return serializer._type if serializer._type
-          if ActiveModelSerializers.config.jsonapi_resource_type == :singular
-            serializer.object.class.model_name.singular
+          value_or_block = serializer._type
+          if value_or_block
+            if value_or_block.respond_to?(:call)
+              serializer.instance_exec(serializer, &value_or_block)
+            else
+              value_or_block
+            end
           else
-            serializer.object.class.model_name.plural
+            type_from_config(serializer)
           end
         end
 
         def id_for(serializer)
           serializer.read_attribute_for_serialization(:id).to_s
+        end
+
+        def type_from_config(serializer)
+          if ActiveModelSerializers.config.jsonapi_resource_type == :singular
+            serializer.object.class.model_name.singular
+          else
+            serializer.object.class.model_name.plural
+          end
         end
       end
     end
