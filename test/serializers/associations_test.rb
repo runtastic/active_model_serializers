@@ -3,7 +3,16 @@ require 'test_helper'
 module ActiveModel
   class Serializer
     class AssociationsTest < ActiveSupport::TestCase
-      def setup
+      module Serializers
+        class Post < ActiveModel::Serializer
+          has_many :appendables, namespace: Serializers
+        end
+
+        class Comment < ActiveModel::Serializer; end
+        class Like < ActiveModel::Serializer; end
+      end
+
+      setup do
         @author = Author.new(name: 'Steve K.')
         @author.bio = nil
         @author.roles = []
@@ -18,10 +27,20 @@ module ActiveModel
         @comment.author = nil
         @post.author = @author
         @author.posts = [@post]
-
+        @like = Like.new(id: 1)
+        @post.appendables = [@like, @comment]
         @post_serializer = PostSerializer.new(@post, { custom_options: true })
         @author_serializer = AuthorSerializer.new(@author)
         @comment_serializer = CommentSerializer.new(@comment)
+      end
+
+      def test_association_with_namespace_options_uses_namespace_serializer
+        @post_serializer = Serializers::Post.new(@post)
+        @post_serializer.associations.each do |association|
+          serializers = association.serializer.to_a
+          assert_kind_of Serializers::Like, serializers.first
+          assert_kind_of Serializers::Comment, serializers.last
+        end
       end
 
       def test_has_many_and_has_one

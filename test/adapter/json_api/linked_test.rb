@@ -9,6 +9,27 @@ module ActiveModelSerializers
   module Adapter
     class JsonApi
       class LinkedTest < ActiveSupport::TestCase
+        module Serializers
+          class Post < ActiveModel::Serializer
+            type 'namespaced_post'
+            attributes :id, :title
+            has_many :appendables, namespace: Serializers
+          end
+
+          class Comment < ActiveModel::Serializer
+            type 'namespaced_comment'
+            attribute :body
+          end
+
+          class Like < ActiveModel::Serializer
+            type 'namespaced_like'
+          end
+
+          class Author < ActiveModel::Serializer
+            type 'namespaced_author'
+          end
+        end
+
         def setup
           @author1 = Author.new(id: 1, name: 'Steve K.')
           @author2 = Author.new(id: 2, name: 'Tenderlove')
@@ -41,6 +62,49 @@ module ActiveModelSerializers
           @author2.roles = []
           @bio1.author = @author1
           @bio2.author = @author2
+          @like = Like.new(id: 1)
+          @first_post.appendables = [@like, @first_comment]
+        end
+
+        def test_include_polymorphic
+          adapter = ActiveModel::SerializableResource.new(
+            [@first_post, @author1],
+            namespace: Serializers,
+            adapter: :json_api,
+            include: [:appendables]
+          )
+          expected = {
+            data: [
+              {
+                id: '10',
+                type: 'namespaced_post',
+                attributes: { title: 'Hello!!' },
+                relationships: {
+                  appendables: {
+                    data: [{ id: '1', type: 'namespaced_like' }, { id: '1', type: 'namespaced_comment' }]
+                  }
+                }
+              },
+              {
+                id: '1',
+                type: 'namespaced_author'
+              }
+            ],
+            included: [
+              {
+                id: '1',
+                type: 'namespaced_like'
+              },
+              {
+                id: '1',
+                type: 'namespaced_comment',
+                attributes: {
+                  body: 'ZOMG A COMMENT'
+                }
+              }
+            ]
+          }
+          assert_equal expected, adapter.serializable_hash
         end
 
         def test_include_multiple_posts_and_linked_array

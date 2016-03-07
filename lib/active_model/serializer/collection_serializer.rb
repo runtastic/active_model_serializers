@@ -9,10 +9,11 @@ module ActiveModel
 
       def initialize(resources, options = {})
         @root = options[:root]
+        lookup_options = options.slice(:namespace)
         @object = resources
         @serializers = resources.map do |resource|
           serializer_context_class = options.fetch(:serializer_context_class, ActiveModel::Serializer)
-          serializer_class = options.fetch(:serializer) { serializer_context_class.serializer_for(resource) }
+          serializer_class = options.fetch(:serializer) { serializer_context_class.serializer_for(resource, lookup_options) }
 
           if serializer_class.nil?
             fail NoSerializerError, "No serializer found for resource: #{resource.inspect}"

@@ -4,7 +4,7 @@ module ActiveModel
   class Serializer
     class SerializerForTest < ActiveSupport::TestCase
       class CollectionSerializerTest < ActiveSupport::TestCase
-        def setup
+        setup do
           @array = [1, 2, 3]
           @previous_collection_serializer = ActiveModelSerializers.config.collection_serializer
         end
@@ -47,7 +47,7 @@ module ActiveModel
         Tweet = Class.new(::Model)
         TweetSerializer = Class.new
 
-        def setup
+        setup do
           @profile = Profile.new
           @my_profile = MyProfile.new
           @custom_profile = CustomProfile.new

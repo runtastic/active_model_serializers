@@ -4,6 +4,24 @@ module ActiveModelSerializers
   module Adapter
     class JsonApi
       class HasManyTest < ActiveSupport::TestCase
+        module Serializers
+          class Post < ActiveModel::Serializer
+            type 'namespaced_post'
+
+            attributes :id, :title
+
+            has_many :appendables, namespace: Serializers
+          end
+
+          class Comment < ActiveModel::Serializer
+            type 'namespaced_comment'
+          end
+
+          class Like < ActiveModel::Serializer
+            type 'namespaced_like'
+          end
+        end
+
         def setup
           ActionController::Base.cache_store.clear
           @author = Author.new(id: 1, name: 'Steve K.')
@@ -28,10 +46,32 @@ module ActiveModelSerializers
           @post_without_comments.blog = nil
           @tag = Tag.new(id: 1, name: '#hash_tag')
           @post.tags = [@tag]
+          @like = Like.new(id: 1)
+          @post.appendables = [@like, @first_comment]
           @serializer = PostSerializer.new(@post)
           @adapter = ActiveModelSerializers::Adapter::JsonApi.new(@serializer)
 
           @virtual_value = VirtualValue.new(id: 1)
+        end
+
+        def test_namespaced_serializers
+          expected = {
+            data: {
+              id: '1',
+              type: 'namespaced_post',
+              attributes: {
+                title: 'New Post'
+              },
+              relationships: {
+                appendables: {
+                  data: [
+                    { id: '1', type: 'namespaced_like' }, { id: '1', type: 'namespaced_comment' }
+                  ]
+                }
+              }
+            }
+          }
+          assert_equal expected, ActiveModel::SerializableResource.new(@post, adapter: :json_api, namespace: Serializers).as_json
         end
 
         def test_includes_comment_ids
