@@ -8,6 +8,16 @@ module ActiveModelSerializers
           type 'with_defined_type'
         end
 
+        class WithDynamicTypeSerializer < ActiveModel::Serializer
+          type do |serializer|
+            "#{object.type}_#{serializer.category}"
+          end
+
+          def category
+            'dynamic'
+          end
+        end
+
         class WithDefinedIdSerializer < ActiveModel::Serializer
           def id
             'special_id'
@@ -17,12 +27,16 @@ module ActiveModelSerializers
         class FragmentedSerializer < ActiveModel::Serializer; end
 
         setup do
-          @model = Author.new(id: 1, name: 'Steve K.')
+          @model = Author.new(id: 1, name: 'Steve K.', type: 'awesome_author')
           ActionController::Base.cache_store.clear
         end
 
         def test_defined_type
           test_type(WithDefinedTypeSerializer, 'with_defined_type')
+        end
+
+        def test_dynamic_type
+          test_type(WithDynamicTypeSerializer, 'awesome_author_dynamic')
         end
 
         def test_singular_type

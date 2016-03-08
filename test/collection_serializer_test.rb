@@ -3,8 +3,11 @@ require 'test_helper'
 module ActiveModel
   class Serializer
     class CollectionSerializerTest < ActiveSupport::TestCase
-      def setup
-        @comment = Comment.new
+      class Comment < ActiveModel::Serializer
+      end
+
+      setup do
+        @comment = ::Comment.new
         @post = Post.new
         @resource = build_named_collection @comment, @post
         @serializer = collection_serializer.new(@resource, { some: :options })
@@ -31,7 +34,7 @@ module ActiveModel
         serializers =  @serializer.to_a
 
         assert_kind_of CommentSerializer, serializers.first
-        assert_kind_of Comment, serializers.first.object
+        assert_kind_of ::Comment, serializers.first.object
 
         assert_kind_of PostSerializer, serializers.last
         assert_kind_of Post, serializers.last.object
@@ -94,6 +97,11 @@ module ActiveModel
         expected = 'custom_root'
         serializer = collection_serializer.new(build_named_collection, root: expected)
         assert_equal expected, serializer.json_key
+      end
+
+      def test_namespace_lookup
+        serializer = collection_serializer.new(@resource, namespace: self.class)
+        assert_equal Comment, serializer.to_a.first.class
       end
     end
   end

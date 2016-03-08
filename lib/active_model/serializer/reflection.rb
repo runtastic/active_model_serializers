@@ -126,6 +126,7 @@ module ActiveModel
         serializer_options = parent_serializer_options.except(:serializer)
         serializer_options[:serializer] = serializer if serializer
         serializer_options[:serializer_context_class] = subject.class
+        serializer_options[:namespace] = reflection_options[:namespace] if reflection_options.key?(:namespace)
         serializer_options
       end
     end

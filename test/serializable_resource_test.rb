@@ -2,11 +2,26 @@ require 'test_helper'
 
 module ActiveModel
   class SerializableResourceTest < ActiveSupport::TestCase
+    module Serializers
+      class Profile < ActiveModel::Serializer
+        attribute :id do
+          'profile_id'
+        end
+      end
+    end
+
     def setup
       @resource = Profile.new({ name: 'Name 1', description: 'Description 1', comments: 'Comments 1' })
       @serializer = ProfileSerializer.new(@resource)
       @adapter = ActiveModelSerializers::Adapter.create(@serializer)
       @serializable_resource = ActiveModel::SerializableResource.new(@resource)
+    end
+
+    def test_serializable_resource_use_namespace_option
+      serializer = Serializers::Profile.new(@resource)
+      adapter = ActiveModelSerializers::Adapter.create(serializer)
+      serializable_resource = ActiveModel::SerializableResource.new(@resource, namespace: Serializers)
+      assert_equal adapter.serializable_hash, serializable_resource.serializable_hash
     end
 
     def test_serializable_resource_delegates_serializable_hash_to_the_adapter
