@@ -126,12 +126,14 @@ module ActiveModel
       elsif resource.respond_to?(:to_ary)
         config.array_serializer
       else
-        resource_class = resource.class
         namespace = options[:namespace] || association_options[:namespace]
         if namespace
+          resource_class = resource.class
           "#{namespace}::#{resource_class.name.demodulize}".safe_constantize
         else
-          association_options.fetch(:serializer, get_serializer_for(resource_class))
+          association_options.fetch(:serializer) do
+            get_serializer_for(resource.class)
+          end
         end
       end
     end
@@ -186,21 +188,22 @@ module ActiveModel
     end
 
     def attributes(options = {})
+      klass = self.class
       attributes =
         if options[:fields]
-          self.class._attributes & options[:fields]
+          klass._attributes & options[:fields]
         else
-          self.class._attributes.dup
+          klass._attributes
         end
 
       attributes += options[:required_fields] if options[:required_fields]
-
+      fragmented = klass._fragmented
       attributes.each_with_object({}) do |name, hash|
-        unless self.class._fragmented
+        unless fragmented
           attr_val   = send(name)
           hash[name] = attr_val unless (attr_val.nil? && options[:exclude_nil])
         else
-          hash[name] = self.class._fragmented.public_send(name)
+          hash[name] = fragmented.public_send(name)
         end
       end
     end
